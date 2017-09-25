@@ -1,0 +1,10 @@
+body {
+  padding-top: 60px;
+}
+
+.heading {
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  color: black;
+  text-align: center;
+}
