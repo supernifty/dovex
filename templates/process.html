@@ -74,6 +74,7 @@
                   <th>Column Name</th>
                   <th>Missing %</th>
                   <th>#Distinct</th>
+                  <th>Entropy (bits)</th>
                 </tr>
               </thead>
               <tbody>
@@ -82,6 +83,7 @@
                   <td>{{ column.name }} </td>
                   <td>{{ '%.1f' % column.missing|float }}</td>
                   <td>{{ column.unique_count }}</td>
+                  <td>{{ '%.1f' % column.information|float }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
