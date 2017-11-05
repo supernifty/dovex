@@ -54,6 +54,9 @@ def data(filename):
                     meta['header'] = row
                     continue
                 if row[0].startswith('#'):
+                    if lines == 1:
+                        meta['datatype'] = row
+                        meta['datatype'][0] = row[0][1:] # remove leading #
                     continue
                 data.append(row)
 

@@ -18,11 +18,18 @@ python main.py
 ```
 
 Next, upload your data. The software expects the data to be in CSV format.
+
 The first line should be column headings, followed by lines of data.
 
 ## Data types
+Datatypes can be specified by starting the second line with '#'.
+Possible datatypes are: categorical, ordinal, numeric.
+
 
 ## Provided functionality
 
-* missing data by sample
 * missing data by column
+
+## TODO
+* missing data by sample
+

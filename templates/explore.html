@@ -64,6 +64,7 @@
                   <th>Column Name</th>
                   <th>Missing %</th>
                   <th>#Distinct</th>
+                  <th>Type</th>
                 </tr>
               </thead>
             </table>
@@ -74,6 +75,14 @@
          &nbsp;
        </div>
 
+       <div class="row">
+          <div class="heading">Missing Data</div>
+          <div class="col-md-6">
+            <div id="missing_by_column" style="height:480px;"></div>
+          </div>
+          <div class="col-md-6">
+            <div id="missing_by_row" style="height:480px;"></div>
+          </div>
 
        <div class="row">
           <div class="heading">Distribution of Inputs</div>
@@ -90,6 +99,14 @@
           <div class="col-md-2">
           </div>
         </div>
+
+       <div class="row">
+          <div class="heading">Correlation between inputs</div>
+       </div>
+
+       <div class="row">
+          <div class="heading">Principal Component Analysis (PCA)</div>
+       </div>
 
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
