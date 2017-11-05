@@ -17,6 +17,9 @@ app.secret_key = 'ducks in space'
 
 @app.route('/', methods=['GET', 'POST'])
 def main():
+    '''
+        saves the uploaded file and forwards to the processor
+    '''
     if flask.request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in flask.request.files:
@@ -32,43 +35,42 @@ def main():
             filename = str(uuid.uuid4())
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             # process file
-            return flask.redirect(flask.url_for('process', filename=filename))
+            return flask.redirect(flask.url_for('explore', filename=filename))
     return flask.render_template('main.html')
 
-@app.route('/process/<filename>')
-def process(filename):
-    df = {}
-    header = []
-    row_count = 0
+@app.route('/data/<filename>')
+def data(filename):
+    '''
+        provide details as json
+    '''
     try:
-      with open(os.path.join(app.config['UPLOAD_FOLDER'], filename)) as data_fh:
-        for row_count, row in enumerate(csv.reader(data_fh)):
-          if row[0].startswith('#'):
-            if row_count == 0:
-              header = row
-              for column in header:
-                df[column] = {'missing': 0, 'unique': collections.defaultdict(int)}
-          else:
-            for idx, value in enumerate(row):
-              colname = header[idx]
-              df[colname]['unique'][value] += 1
-              if value == '':
-                df[colname]['missing'] += 1
-      columns = []
-      for column in header:
-        missing = df[column]['missing']
-        information = -sum([ df[column]['unique'][value] / row_count * math.log(df[column]['unique'][value] / row_count, 2) for value in df[column]['unique']])
-        columns.append({'name': column, 'missing': missing * 100 / row_count, 'unique_count': len(df[column]['unique']), 'information': information})
+        meta = {}
+        data = []
+        lines = 0
 
-      # TODO
-      # - missing data by sample
-      # - histograms of each column
-      # - correlation between columns
-      # - clustering
+        with open(os.path.join(app.config['UPLOAD_FOLDER'], filename)) as data_fh:
+            for lines, row in enumerate(csv.reader(data_fh)):
+                if lines == 0:
+                    meta['header'] = row
+                    continue
+                if row[0].startswith('#'):
+                    continue
+                data.append(row)
 
-      return flask.render_template('process.html', row_count=row_count, column_count=len(columns), columns=columns)
+        meta['lines'] = lines
+        return flask.jsonify(meta=meta, data=data)
     except FileNotFoundError:
-      flask.abort(404)
+        flask.abort(404)
+
+@app.route('/explore/<filename>')
+def explore(filename):
+    '''
+        process data client side
+    '''
+    try:
+        return flask.render_template('explore.html', filename=filename)
+    except FileNotFoundError:
+        flask.abort(404)
 
 if __name__ == '__main__':
     app.run()

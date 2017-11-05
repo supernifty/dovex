@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Dataset Summary</title>
+    <title>dover - Dataset Overview and Exploration</title>
 
     <!-- Bootstrap -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
@@ -31,11 +31,11 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="{{ url_for('main') }}">Summarizer</a>
+          <a class="navbar-brand" href="{{ url_for('main') }}">Dover</a>
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-left">
-            <li><a href="#">Upload</a></li>
+            <li><a href="/">Upload</a></li>
             <li class="active"><a href="#">Detail <span class="sr-only">(current)</span></a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
@@ -54,16 +54,6 @@
                   <th>Value</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>Row Count</td>
-                  <td>{{ row_count }}</td>
-                </tr>
-                <tr>
-                  <td>Column Count</td>
-                  <td>{{ column_count }}</td>
-                </tr>
-              </tbody>
             </table>
          </div>
 
@@ -74,26 +64,31 @@
                   <th>Column Name</th>
                   <th>Missing %</th>
                   <th>#Distinct</th>
-                  <th>Entropy (bits)</th>
                 </tr>
               </thead>
-              <tbody>
-                {% for column in columns %}
-                <tr>
-                  <td>{{ column.name }} </td>
-                  <td>{{ '%.1f' % column.missing|float }}</td>
-                  <td>{{ column.unique_count }}</td>
-                  <td>{{ '%.1f' % column.information|float }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
             </table>
          </div>
        </div>
 
-        <div class="row">
-          &nbsp;
+       <div class="row">
+         &nbsp;
+       </div>
+
+
+       <div class="row">
+          <div class="heading">Distribution of Inputs</div>
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-2">
+          </div>
         </div>
 
     </div>
@@ -102,22 +97,15 @@
     <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.12/js/jquery.dataTables.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.15.1/moment.min.js"></script>
+    <script src="{{ url_for('static', filename='main.js', v='171105') }}"></script>
     <script>
 $(document).ready(function () {
-  $('#table_overview').DataTable({
-      "destroy": true,
-      "ordering": false,
-      "paging": false,
-      "searching": false,
-      "bInfo" : false
-    });
-  $('#table_columns').DataTable({
-      "destroy": true,
-      "ordering": true,
-      "paging": false,
-      "searching": false,
-      "bInfo" : false
-    });
+  set_updating();
+  $.ajax({
+    url: "{{ url_for('data', filename=filename) }}"
+  })
+  .done(process)
+  .fail(set_error);
 });
 
     </script>
