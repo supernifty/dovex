@@ -7,14 +7,7 @@ var
   },
 
   show_overview = function(data) {
-    $('#table_overview').DataTable({
-      "destroy": true,
-      "order": [[ 0, "asc" ]],
-      "paging": false,
-      "searching": false,
-      "bInfo" : false,
-      "data": [['Rows', data['data'].length], ['Columns', data['meta']['header'].length]]
-    });
+    $('#summary').html('Loaded <strong>' + data['data'].length + '</strong> rows with <strong>' + data['meta']['header'].length + '</strong> columns.'); 
   },
 
   show_columns = function(data) {
@@ -76,7 +69,7 @@ var
 
   show_missing = function(summary, data) {
     var
-      layout = { title: '% Missing data for each column' },
+      layout = { title: '% Missing data for each column', xaxis: { tickangle: 45 } },
       x = [], 
       y = [];
     
