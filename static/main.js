@@ -289,7 +289,7 @@ var
 
     // check not too many categories (plot.ly can't handle)
     distinct_count = Object.keys(g['summary']['missing_col'][feature]['distinct']).length;
-    if (distinct_count > MAX_CATEGORIES) {
+    if (g['summary']['datatype'][feature] == 'categorical' && distinct_count > MAX_CATEGORIES) {
       $('#correlations').html('<div class="alert alert-danger fade in">This feature has too many categories (<strong>' + distinct_count + '</strong>)</div>');
       return;
     }

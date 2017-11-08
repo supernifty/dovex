@@ -6,6 +6,8 @@ Use to identify columns of interest, explore correlations between inputs, and pr
 ## Installation
 
 ```
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -13,7 +15,7 @@ pip install -r requirements.txt
 
 To run the software locally, first install the requirements above, then start the web server:
 ```
-python main.py
+python3 main.py
 ```
 
 Next, upload your data. The software expects the data to be in CSV format.
@@ -36,7 +38,6 @@ Without specifying data types, the software will attempt to infer the datatype o
 ## TODO
 * prediction
 * clustering
-* prediction
 * direct url loading
 
 ## Datasets

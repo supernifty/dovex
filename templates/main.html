@@ -58,7 +58,12 @@
           &nbsp;
         </div>
         <div class="row">
-          <p>Alternatively, explore an <a href="{{ url_for('explore', filename='iris.data') }}">example dataset</a>.</p>
+          <p>Alternatively, explore one of the example datasets:
+          <ul>
+            <li><a href="{{ url_for('explore', filename='iris.data') }}">Iris dataset</a> (<a target="_blank" href="http://archive.ics.uci.edu/ml/datasets/Iris">details</a>).</li>
+            <li><a href="{{ url_for('explore', filename='forestfires.csv') }}">Forest Fires dataset</a> (<a target="_blank" href="http://archive.ics.uci.edu/ml/datasets/Forest+Fires">details</a>).</li>
+          </ul>
+          </p>
         </div>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
