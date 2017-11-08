@@ -114,7 +114,7 @@ var
 
   show_missing = function() {
     var
-      layout = { title: '% Missing data for each column', xaxis: { tickangle: 45 } },
+      layout = { title: '% Missing data for each column', xaxis: {} },
       x = [], 
       y = [];
     
@@ -164,11 +164,11 @@ var
            y: y,
            type: 'bar'
         } ];
-        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, xtickangle: 45, margin: { r: 0, pad: 0 } };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category'}, margin: { r: 0, pad: 0 } };
       }
       else { // numeric
         converted = [{ x: cols[col], type: 'histogram' }];
-        layout = { title: g['data']['meta']['header'][col], xtickangle: 45, margin: { r: 0, pad: 0 } };
+        layout = { title: g['data']['meta']['header'][col], xaxis: {}, margin: { r: 0, pad: 0 } };
       }
       target = $('#distributions').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="dist_' + col + '" style="width: ' + width + 'px"></div></div>');
       Plotly.plot("dist_" + col, converted, layout, {displayModeBar: false});
@@ -328,7 +328,7 @@ var
             type: 'bar'
           });
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, xtickangle: 45, margin: { r: 0, pad: 0 }, barmode: 'stack' };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
       }
       else if (g['summary']['datatype'][col] != 'categorical' && g['summary']['datatype'][feature] != 'categorical') { // num vs num -> scatter
         x = []; 
@@ -357,7 +357,6 @@ var
             counts[feature_val].push(x_val);
           }
         }
-        //console.log(counts);
         // convert to traces - one trace per feature
         converted = [];
         for (current_feature_val in counts) {
@@ -369,9 +368,14 @@ var
             });
           }
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: {}, xtickangle: 45, margin: { r: 0, pad: 0 }, barmode: 'stack', yaxis: { title: 'Count' }};
-       }
+        layout = { title: g['data']['meta']['header'][col], xaxis: {}, margin: { r: 0, pad: 0 }, barmode: 'stack', yaxis: { title: 'Count' }};
+      }
       else { // cat (x) vs num (y)
+        col_distinct_count = Object.keys(g['summary']['missing_col'][col]['distinct']).length;
+        if (col_distinct_count > MAX_CATEGORIES) {
+          // TODO tell user
+          continue;
+        }
         counts = {}
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
@@ -391,7 +395,7 @@ var
             boxpoints: 'Outliers'
           });
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, yaxis: { title: g['data']['meta']['header'][feature] }, xtickangle: 45, margin: { r: 0, pad: 0 }};
+        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }};
       }
       $('#correlations').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
       //console.log(converted);

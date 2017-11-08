@@ -1,4 +1,4 @@
-# Dover
+# Dovex
 A web based tool to quickly provide an interactive overview of your dataset.
 
 Use to identify columns of interest, explore correlations between inputs, and problems in your input data.
