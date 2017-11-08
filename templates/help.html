@@ -33,10 +33,8 @@
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-left">
-            <li class="active"><a href="#">Upload <span class="sr-only">(current)</span></a></li>
-            <li><a href="{{ url_for('help') }}">Help</a></li>
-          </ul>
-          <ul class="nav navbar-nav navbar-right">
+            <li><a href="{{ url_for('main') }}">Upload</a></li>
+            <li class="active"><a href="{{ url_for('help') }}">Help <span class="sr-only">(current)</span></a></li>
           </ul>
         </div>
       </div>
@@ -44,24 +42,24 @@
 
     <div class="container">
         <div class="row">
-          <div class="alert alert-info">Upload your dataset in CSV format.</div>
-          <form method=post enctype=multipart/form-data>
-            <div class="form-group">
-              <label for="file">File input</label>
-              <input type="file" class="form-control-file" name="file" id="file" aria-describedby="fileHelp">
-              <small id="fileHelp" class="form-text text-muted">Upload a CSV file to explore your dataset.</small>
-            </div>
-            <button type="submit" class="btn btn-primary">Upload and analyze</button>
-          </form>
-        </div>
-        <div class="row">
-          &nbsp;
-        </div>
-        <div class="row">
-          <p>Alternatively, explore an <a href="{{ url_for('explore', filename='iris.data') }}">example dataset</a>.</p>
-        </div>
+          <p>
+            Perform exploratory analysis on your dataset, including:
+            <ul>
+              <li>Summary of variables, missing data, min, max, mean</li>
+              <li>Distribution of individual features</li>
+              <li>Relationships between inputs</li>
+            </ul>
+          </p>
+          <p>
+            To get started, <a href="{{ url_for('help') }}">upload a file</a> in CSV format, or select a <a href="{{ url_for('explore', filename='iris.data') }}">pre-existing example</a>.
+          </p>
+          <p>
+            For further details, see the online <a href="https://github.com/supernifty/dover/blob/master/README.md">readme file</a>.
+          </p>
+       </div>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   </body>
 </html>
+

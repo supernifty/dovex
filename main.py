@@ -4,6 +4,7 @@ import collections
 import csv
 import math
 import os
+import urllib
 import uuid
 
 import flask
@@ -38,6 +39,13 @@ def main():
             return flask.redirect(flask.url_for('explore', filename=filename))
     return flask.render_template('main.html')
 
+
+def get_fh(filename):
+  if filename.startswith('url='):
+    return urllib.urlopen(filename[4:])
+  else:
+    return open(os.path.join(app.config['UPLOAD_FOLDER'], filename)) 
+
 @app.route('/data/<filename>')
 def data(filename):
     '''
@@ -48,10 +56,12 @@ def data(filename):
         data = []
         lines = 0
 
-        with open(os.path.join(app.config['UPLOAD_FOLDER'], filename)) as data_fh:
+        with get_fh(filename) as data_fh:
             for lines, row in enumerate(csv.reader(data_fh)):
                 if lines == 0:
                     meta['header'] = row
+                    continue
+                if len(row) == 0: # skip empty lines
                     continue
                 if row[0].startswith('#'):
                     if lines == 1:
@@ -74,6 +84,10 @@ def explore(filename):
         return flask.render_template('explore.html', filename=filename)
     except FileNotFoundError:
         flask.abort(404)
+
+@app.route('/help')
+def help():
+    return flask.render_template('help.html')
 
 if __name__ == '__main__':
     app.run()
