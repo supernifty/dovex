@@ -16,9 +16,11 @@ var
       datatype = [],
       missing_row;
 
+    g['included_cols'] = new Set();
     for (header in g['data']['meta']['header']) { // 0..len
       summary['missing_col'][header] = {'missing': 0, 'distinct': {}, 'min': 1e9, 'max': -1e9, 'count': 0, 'sum': 0};
       datatype.push('numeric');
+      g['included_cols'].add(header);
     }
 
     // populate summary
@@ -257,12 +259,6 @@ var
     Plotly.plot("pca", [{ x: transformed[0], y: transformed[1], mode: 'markers', type: 'scatter' }], { title: 'PCA' }, {displayModeBar: false});
   },
 
-  show_prediction = function() {
-    for (header in g['data']['meta']['header']) {
-      $('#outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
-    }
-  },
-
   init_correlations = function() {
     for (header in g['data']['meta']['header']) {
       $('#correlation_feature').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
@@ -403,6 +399,37 @@ var
     }
   },
 
+  init_prediction = function() {
+    for (header in g['data']['meta']['header']) {
+      $('#outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
+    }
+    show_predictors();
+  },
+
+  show_predictors = function() {
+    var outcome_datatype = g['summary']['datatype'][$('#outcome').val()];
+    $('#predictor').empty();
+    for (predictor in ml) {
+      if (outcome_datatype == ml[predictor]().datatype) {
+        $('#predictor').append('<option value="' + predictor + '">' + ml[predictor]().name + '</option>');
+      }
+    }
+  },
+
+  show_prediction = function() {
+    var predictor = ml[$('#predictor').val()](),
+      outcome_datatype = g['summary']['datatype'][$('#outcome').val()]
+    predictor.fit(g['data']['data'], g['included_cols'], $('#outcome').val());
+    if (outcome_datatype == 'categorical') {
+      train_result = 100 * predictor.score(g['data']['data']) / g['data']['data'].length;
+      $('#prediction_result').html('<div class="alert alert-info alert-dismissable">Training accuracy: <strong>' + (Math.round(train_result * 100) / 100) + '%</strong></div>');
+    }
+    else {
+      train_result = predictor.score(g['data']['data']);
+      $('#prediction_result').html('<div class="alert alert-info alert-dismissable">Training RMSE: <strong>' + (Math.round(train_result * 100) / 100) + '</strong></div>');
+    }
+  }
+
   run_queue = function() {
     if (g['queue'].length > 0) {
       g['queue'].shift()();
@@ -420,10 +447,12 @@ var
       show_column_dists,
       init_correlations,
       show_correlations,
-      show_prediction,
+      init_prediction,
     ];
 
     run_queue();
 
     $('#correlation_feature').change(show_correlations);
+    $('#outcome').change(show_predictors);
+    $('#run_predictor').click(show_prediction);
   };

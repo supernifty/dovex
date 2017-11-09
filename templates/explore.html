@@ -55,7 +55,7 @@
         <li><a href="#tab_inputs" data-toggle="tab">Distribution of inputs</a></li>
         <li><a href="#tab_relationship" data-toggle="tab">Relationships between inputs</a></li>
         <li class="disabled"><a href="#tab_cluster" data-toggle="tab">Clustering</a></li>
-        <li class="disabled"><a href="#tab_predict" data-toggle="tab">Prediction</a></li>
+        <li><a href="#tab_predict" data-toggle="tab">Prediction</a></li>
       </ul>
 
       <div class="tab-content dovex-tab-content">
@@ -122,13 +122,13 @@
       <div class="tab-pane" id="tab_relationship">
 
        <div class="row">
-          <p> 
+          <div class="col-md-6">
             Select a feature of interest:
-            <select id="correlation_feature"></select>
-          </p>
-          <div class="row">
-             <div id="correlations" class="col-md-12"> </div>
+            <select id="correlation_feature" class="form-control"></select>
           </div>
+       </div>
+       <div class="row">
+         <div id="correlations" class="col-md-12"> </div>
        </div>
 
       </div> <!-- relationship tab -->
@@ -149,15 +149,38 @@
          <div class="tab-pane" id="tab_predict">
 
        <div class="row">
-          <div class="heading">Prediction</div>
-          <div class="col-md-6">
-            <select id="outcome"></select>
+          <div class="col-md-5">
+            Select the feature to predict:
+            <select id="outcome" class="form-control"></select>
+          </div>
+          <div class="col-md-5">
+            Select a prediction algorithm:
+            <select id="predictor" class="form-control">
+              <option value="majority">Baseline (majority class)</option>
+              <option value="linear">Linear Regression</option>
+              <option value="logistic">Logistic Regression</option>
+            </select>
+          </div>
+        </div>
+       <div class="row">&nbsp;</div>
+       <div class="row">
+          <div class="col-md-12">
+            <button type="button" class="btn btn-primary" id="run_predictor">Start Analysis</button>
           </div>
        </div>
 
-         </div> <!-- predict tab -->
+       <div class="row">&nbsp;</div>
 
-      </div> <!-- tab content -->
+       <div class="row">
+          <div class="col-md-12" id="prediction_result">
+          </div>
+       </div>
+
+    </div> <!-- predict tab -->
+
+    </div> <!-- tab content -->
+
+
     </div> <!-- container -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -167,6 +190,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.15.1/moment.min.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
+    <script src="{{ url_for('static', filename='ml.js', v='171105') }}"></script>
     <script src="{{ url_for('static', filename='main.js', v='171105') }}"></script>
     <script>
 $(document).ready(function () {
