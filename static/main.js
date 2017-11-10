@@ -189,7 +189,7 @@ var
       for (col in g['data']['data'][row]) { // 0..col
         if (g['summary']['datatype'][col] == 'categorical') {
           // add number of rows equal to distinct
-          for (let key of g['summary']['missing_col'][col]['distinct'].keys()) { 
+          for (var key in g['summary']['missing_col'][col]['distinct'].keys()) { 
             if (key == g['data']['data'][row][col]) {
               new_row.push(1);
             }
