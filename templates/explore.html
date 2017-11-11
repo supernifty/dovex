@@ -195,6 +195,7 @@
     <script>
 $(document).ready(function () {
   set_update('Downloading dataset...');
+  set_url("{{ url_for('process', filename=filename) }}");
   $.ajax({
     url: "{{ url_for('data', filename=filename) }}"
   })

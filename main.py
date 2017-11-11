@@ -9,6 +9,8 @@ import uuid
 
 import flask
 
+import ml
+
 #import plotly.graph_objs as go
 #import pandas as pd
 
@@ -49,7 +51,7 @@ def get_fh(filename):
 @app.route('/data/<filename>')
 def data(filename):
     '''
-        provide details as json
+        provide data as json
     '''
     try:
         meta = {}
@@ -78,12 +80,29 @@ def data(filename):
 @app.route('/explore/<filename>')
 def explore(filename):
     '''
-        process data client side
+        client side explorer
     '''
     try:
         return flask.render_template('explore.html', filename=filename)
     except FileNotFoundError:
         flask.abort(404)
+
+@app.route('/process/<filename>', methods=['POST'])
+def process(filename):
+    '''
+        server side analysis
+    '''
+    try:
+        method = flask.request.form['method']
+        if method in ml.METHODS:
+            result = ml.METHODS[method](get_fh(filename), flask.request.form)
+            return flask.jsonify(result=result)
+        else:
+            print('no method')
+            flask.abort(404, 'method not found')
+    except FileNotFoundError:
+        print('file not found')
+        flask.abort(404, 'data not found')
 
 @app.route('/help')
 def help():

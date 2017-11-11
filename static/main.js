@@ -6,21 +6,25 @@ var
     $('#summary').html(msg); 
   },
 
+  set_url = function(url) {
+    g['url'] = url;
+  },
+
   set_error = function() {
     $('#summary').attr('class', 'alert alert-error alert-dismissable');
     $('#summary').html('Failed to load data.'); 
   },
 
   calculate_summary = function() {
-    var summary = {'missing_col': {}, 'missing_row': []}, 
+    var summary = {'columns': {}, 'missing_row': []}, 
       datatype = [],
       missing_row;
 
-    g['included_cols'] = new Set();
+    g['excluded_rows'] = new Set();
+    g['excluded_cols'] = new Set();
     for (header in g['data']['meta']['header']) { // 0..len
-      summary['missing_col'][header] = {'missing': 0, 'distinct': {}, 'min': 1e9, 'max': -1e9, 'count': 0, 'sum': 0};
+      summary['columns'][header] = {'missing': 0, 'distinct': {}, 'min': 1e9, 'max': -1e9, 'count': 0, 'sum': 0};
       datatype.push('numeric');
-      g['included_cols'].add(header);
     }
 
     // populate summary
@@ -28,7 +32,7 @@ var
       missing_row = 0;
       for (col in g['data']['data'][row]) { // 0..col
         if (g['data']['data'][row][col] == '') {
-          summary['missing_col'][col]['missing'] += 1;
+          summary['columns'][col]['missing'] += 1;
           missing_row += 1;
         }
         else { // not missing
@@ -36,17 +40,16 @@ var
             datatype[col] = 'categorical';
           }
           else {
-            summary['missing_col'][col]['min'] = Math.min(summary['missing_col'][col]['min'], g['data']['data'][row][col]); 
-            summary['missing_col'][col]['max'] = Math.max(summary['missing_col'][col]['max'], g['data']['data'][row][col]); 
-            summary['missing_col'][col]['count'] += 1;
-            summary['missing_col'][col]['sum'] += Number(g['data']['data'][row][col]);
+            summary['columns'][col]['min'] = Math.min(summary['columns'][col]['min'], g['data']['data'][row][col]); 
+            summary['columns'][col]['max'] = Math.max(summary['columns'][col]['max'], g['data']['data'][row][col]); 
+            summary['columns'][col]['count'] += 1;
+            summary['columns'][col]['sum'] += Number(g['data']['data'][row][col]);
           }
         }
-        if (!(g['data']['data'][row][col] in summary['missing_col'][col]['distinct'])) {
-          summary['missing_col'][col]['distinct'][g['data']['data'][row][col]] = 0;
+        if (!(g['data']['data'][row][col] in summary['columns'][col]['distinct'])) {
+          summary['columns'][col]['distinct'][g['data']['data'][row][col]] = 0;
         }
-        summary['missing_col'][col]['distinct'][g['data']['data'][row][col]] += 1;
-        //console.log(summary['missing_col'][col]['distinct']);
+        summary['columns'][col]['distinct'][g['data']['data'][row][col]] += 1;
       }
       summary['missing_row'].push(missing_row);
     }
@@ -69,22 +72,22 @@ var
 
     // convert to datatable
     for (column in g['data']['meta']['header']) { // 0..len
-      if (g['summary']['datatype'][column] != 'categorical' && g['summary']['missing_col'][column]['count'] > 0) {
+      if (g['summary']['datatype'][column] != 'categorical' && g['summary']['columns'][column]['count'] > 0) {
         converted.push([
           g['data']['meta']['header'][column], 
-          100 * g['summary']['missing_col'][column]['missing'] / g['data']['data'].length, 
-          Object.keys(g['summary']['missing_col'][column]['distinct']).length, 
+          100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length, 
+          Object.keys(g['summary']['columns'][column]['distinct']).length, 
           g['summary']['datatype'][column],
-          g['summary']['missing_col'][column]['min'], 
-          g['summary']['missing_col'][column]['max'], 
-          Math.round(g['summary']['missing_col'][column]['sum'] / g['summary']['missing_col'][column]['count'] * 10) / 10
+          g['summary']['columns'][column]['min'], 
+          g['summary']['columns'][column]['max'], 
+          Math.round(g['summary']['columns'][column]['sum'] / g['summary']['columns'][column]['count'] * 10) / 10
         ]);
       }
       else {
         converted.push([
           g['data']['meta']['header'][column], 
-          100 * g['summary']['missing_col'][column]['missing'] / g['data']['data'].length, 
-          Object.keys(g['summary']['missing_col'][column]['distinct']).length, 
+          100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length, 
+          Object.keys(g['summary']['columns'][column]['distinct']).length, 
           g['summary']['datatype'][column],
           '',
           '',
@@ -120,9 +123,9 @@ var
       x = [], 
       y = [];
     
-    for (column in g['summary']['missing_col']) {
+    for (column in g['summary']['columns']) {
       x.push(g['data']['meta']['header'][column]);
-      y.push(100 * g['summary']['missing_col'][column]['missing'] / g['data']['data'].length);
+      y.push(100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length);
     }
 
     converted = [ {
@@ -156,10 +159,9 @@ var
       x = [];
       y = [];
       if (g['summary']['datatype'][col] == 'categorical') {
-        for (distinct in g['summary']['missing_col'][col]['distinct']) {
+        for (distinct in g['summary']['columns'][col]['distinct']) {
            x.push(distinct);
-           y.push(g['summary']['missing_col'][col]['distinct'][distinct]);
-           //console.log(summary['missing_col'][col]['distinct']);
+           y.push(g['summary']['columns'][col]['distinct'][distinct]);
         }
         converted = [ {
            x: x,
@@ -189,7 +191,7 @@ var
       for (col in g['data']['data'][row]) { // 0..col
         if (g['summary']['datatype'][col] == 'categorical') {
           // add number of rows equal to distinct
-          for (var key in g['summary']['missing_col'][col]['distinct'].keys()) { 
+          for (var key in g['summary']['columns'][col]['distinct'].keys()) { 
             if (key == g['data']['data'][row][col]) {
               new_row.push(1);
             }
@@ -227,7 +229,6 @@ var
       }
       result.push(new_row);
     }
-    //console.log('normalize: ' + result.length);
     return result;
   },
 
@@ -235,7 +236,6 @@ var
     // Return matrix of all principal components as column vectors
     var m = X.length;
     var sigma = numeric.div(numeric.dot(numeric.transpose(X), X), m);
-    //console.log('pca.X: ' + X.length);
     return numeric.svd(sigma).U;
   },
 
@@ -243,7 +243,6 @@ var
     // Return matrix of all principal components as column vectors
     var m = X.length;
     var sigma = numeric.div(numeric.dot(numeric.transpose(X), X), m);
-    //console.log('pca.X: ' + X.length);
     return numeric.svd(sigma).U;
   },
 
@@ -252,9 +251,6 @@ var
       eigenvectors = pca_svd(inp),
       transformer = [eigenvectors[0], eigenvectors[1]],
       transformed = numeric.dot(transformer, numeric.transpose(inp)); // 2 x d * d x n
-      //console.log(inp.length);
-      //console.log(transformer.length);
-      //console.log(transformed.length);
     
     Plotly.plot("pca", [{ x: transformed[0], y: transformed[1], mode: 'markers', type: 'scatter' }], { title: 'PCA' }, {displayModeBar: false});
   },
@@ -284,7 +280,7 @@ var
     $('#correlations').empty();
 
     // check not too many categories (plot.ly can't handle)
-    distinct_count = Object.keys(g['summary']['missing_col'][feature]['distinct']).length;
+    distinct_count = Object.keys(g['summary']['columns'][feature]['distinct']).length;
     if (g['summary']['datatype'][feature] == 'categorical' && distinct_count > MAX_CATEGORIES) {
       $('#correlations').html('<div class="alert alert-danger fade in">This feature has too many categories (<strong>' + distinct_count + '</strong>)</div>');
       return;
@@ -367,7 +363,7 @@ var
         layout = { title: g['data']['meta']['header'][col], xaxis: {}, margin: { r: 0, pad: 0 }, barmode: 'stack', yaxis: { title: 'Count' }};
       }
       else { // cat (x) vs num (y)
-        col_distinct_count = Object.keys(g['summary']['missing_col'][col]['distinct']).length;
+        col_distinct_count = Object.keys(g['summary']['columns'][col]['distinct']).length;
         if (col_distinct_count > MAX_CATEGORIES) {
           // TODO tell user
           continue;
@@ -394,7 +390,6 @@ var
         layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }};
       }
       $('#correlations').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
-      //console.log(converted);
       Plotly.plot("corr_" + col, converted, layout, {displayModeBar: false});
     }
   },
@@ -418,17 +413,32 @@ var
 
   show_prediction = function() {
     var predictor = ml[$('#predictor').val()](),
+      outcome_datatype = g['summary']['datatype'][$('#outcome').val()],
+      distinct = {};
+    for (column in g['summary']['columns']) {
+      distinct[column] = Object.keys(g['summary']['columns'][column]['distinct']).length;
+    }
+    // g['excluded_cols'].add(5); // TODO
+    $('#prediction_result').html('<div class="alert alert-info">Processing...</div>')
+    predictor.fit(g['data']['data'], g['excluded_rows'], $('#outcome').val(), g['excluded_cols'], g['summary']['datatype'], distinct, prediction_result_callback, prediction_result_callback_error);
+  },
+
+  prediction_result_callback_error = function() {
+      $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">An error occurred. Prediction failed.</div>')
+  },
+
+  prediction_result_callback = function(training_score, cross_validation_score, skipped) {
+    var predictor = ml[$('#predictor').val()](),
       outcome_datatype = g['summary']['datatype'][$('#outcome').val()]
-    predictor.fit(g['data']['data'], g['included_cols'], $('#outcome').val());
     if (outcome_datatype == 'categorical') {
-      train_result = 100 * predictor.score(g['data']['data']) / g['data']['data'].length;
-      $('#prediction_result').html('<div class="alert alert-info alert-dismissable">Training accuracy: <strong>' + (Math.round(train_result * 100) / 100) + '%</strong></div>');
+      $('#prediction_result').html('<div class="alert alert-info alert-dismissable">Training accuracy: <strong>' + (Math.round(training_score * 100 * 100) / 100) + '%</strong><br/>' +
+        'Cross validation accuracy: <strong>' + (Math.round(cross_validation_score * 100 * 100) / 100) + '%</strong><br/>Skipped: <strong>' + skipped + '</strong></div>');
     }
     else {
-      train_result = predictor.score(g['data']['data']);
-      $('#prediction_result').html('<div class="alert alert-info alert-dismissable">Training RMSE: <strong>' + (Math.round(train_result * 100) / 100) + '</strong></div>');
+      $('#prediction_result').html('<div class="alert alert-info alert-dismissable">Training R<sup>2</sup>: <strong>' + (Math.round(training_score * 100) / 100) + '</strong><br/>' +
+        'Cross validation R<sup>2</sup>: <strong>' + (Math.round(cross_validation_score * 100) / 100) + '</strong><br/>Skipped: <strong>' + skipped + '</strong></div>');
     }
-  }
+  },
 
   run_queue = function() {
     if (g['queue'].length > 0) {

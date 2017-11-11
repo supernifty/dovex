@@ -42,4 +42,5 @@ Without specifying data types, the software will attempt to infer the datatype o
 
 ## Datasets
 We have included the following public domain datasets:
-* iris.data
+* [http://archive.ics.uci.edu/ml/datasets/Iris](Iris)
+* [http://archive.ics.uci.edu/ml/datasets/Forest+Fires](Forest Fires)
