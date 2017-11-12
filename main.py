@@ -98,10 +98,8 @@ def process(filename):
             result = ml.METHODS[method](get_fh(filename), flask.request.form)
             return flask.jsonify(result=result)
         else:
-            print('no method')
             flask.abort(404, 'method not found')
     except FileNotFoundError:
-        print('file not found')
         flask.abort(404, 'data not found')
 
 @app.route('/help')

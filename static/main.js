@@ -115,6 +115,7 @@ var
       },
       "data": converted
     });
+    $('#table_columns tbody').on( 'click', 'tr', select_overview);
   },
 
   show_missing = function() {
@@ -395,11 +396,28 @@ var
   },
 
   init_prediction = function() {
+    $('#outcome').empty();
     for (header in g['data']['meta']['header']) {
       $('#outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
     }
     show_predictors();
+    update_excluded();
   },
+
+  update_excluded = function() {
+    var excluded_list = [];
+    for (header in g['data']['meta']['header']) {
+      if (g['excluded_cols'].has(parseInt(header))) {
+        excluded_list.push(g['data']['meta']['header'][header]);
+      }
+    }
+    if (excluded_list.length == 0) {
+      $('#prediction_config').html('<div class="alert alert-info">All inputs will be included in the analysis.</div>');
+    }
+    else {
+      $('#prediction_config').html('<div class="alert alert-info"><strong>Excluded inputs:</strong> ' + excluded_list.join(', ') + '</div>');
+    }
+  }
 
   show_predictors = function() {
     var outcome_datatype = g['summary']['datatype'][$('#outcome').val()];
@@ -427,17 +445,34 @@ var
       $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">An error occurred. Prediction failed.</div>')
   },
 
-  prediction_result_callback = function(training_score, cross_validation_score, skipped) {
+  prediction_result_callback = function(result) { // training_score, cross_validation_score, predictions) {
     var predictor = ml[$('#predictor').val()](),
       outcome_datatype = g['summary']['datatype'][$('#outcome').val()]
-    if (outcome_datatype == 'categorical') {
-      $('#prediction_result').html('<div class="alert alert-info alert-dismissable">Training accuracy: <strong>' + (Math.round(training_score * 100 * 100) / 100) + '%</strong><br/>' +
-        'Cross validation accuracy: <strong>' + (Math.round(cross_validation_score * 100 * 100) / 100) + '%</strong><br/>Skipped: <strong>' + skipped + '</strong></div>');
+    if ('error' in result) {
+      $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">Error: ' + result['error'] + '</div>');
+    }
+    else if (outcome_datatype == 'categorical') {
+      $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training accuracy: </strong>' + (Math.round(result['training_score'] * 100 * 100) / 100) + '%<br/>' +
+        '<strong>Cross validation accuracy: </strong>' + (Math.round(result['cross_validation_score'] * 100 * 100) / 100) + '%</div>');
     }
     else {
-      $('#prediction_result').html('<div class="alert alert-info alert-dismissable">Training R<sup>2</sup>: <strong>' + (Math.round(training_score * 100) / 100) + '</strong><br/>' +
-        'Cross validation R<sup>2</sup>: <strong>' + (Math.round(cross_validation_score * 100) / 100) + '</strong><br/>Skipped: <strong>' + skipped + '</strong></div>');
+      $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (Math.round(result['training_score'] * 100) / 100) + '<br/>' +
+        '<strong>Cross validation R<sup>2</sup>: </strong>' + (Math.round(result['cross_validation_score'] * 100) / 100) + '</div>');
     }
+  },
+
+  select_overview = function() {
+    if ( $(this).hasClass('excluded') ) {
+      $(this).removeClass('excluded');
+      column = $('#table_columns').DataTable().row(this)[0][0];
+      g['excluded_cols'].delete(column);
+    }
+    else {
+      $(this).addClass('excluded');
+      column = $('#table_columns').DataTable().row(this)[0][0];
+      g['excluded_cols'].add(column);
+    }
+    update_excluded();
   },
 
   run_queue = function() {
@@ -465,4 +500,5 @@ var
     $('#correlation_feature').change(show_correlations);
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
+
   };

@@ -13,6 +13,7 @@ import sklearn.svm
 import sklearn.model_selection
 
 MAX_DISTINCT = 100
+MAX_CELLS = 1e6
 
 def evaluate(data_fh, config, learner):
     # x_exclude, y_predict, y_exclude, scale?
@@ -26,8 +27,6 @@ def evaluate(data_fh, config, learner):
     for i in distinct.keys():
       if distinct[i] > MAX_DISTINCT:
         y_exclude.add(i)
-
-    skipped = 0
 
     X = []
     y = []
@@ -49,7 +48,6 @@ def evaluate(data_fh, config, learner):
  
       # one hot and exclusions
       x = []
-      missing = False
       for idx, cell in enumerate(row): # each col
         if idx not in y_exclude and idx != y_predict:
           if idx in categorical_cols:
@@ -61,47 +59,43 @@ def evaluate(data_fh, config, learner):
               seen[idx][cell] = seen_count[idx]
               seen_count[idx] += 1
             x.extend(chunk)
-          elif cell == '': # TODO don't handle missing float
-            missing = True
+          elif cell == '': # don't handle missing float
+            return { 'error': 'Cannot train with missing data in numeric column {} on line {}.'.format(idx + 1, lines + 1) }
             break
           else:
             x.append(float(cell))
 
-      if missing:
-        skipped += 1
-        continue
-
       if y_predict in categorical_cols:
         y.append(row[y_predict])
-      elif row[y_predict] == '':
-        skipped += 1
-        continue
       else:
         y.append(float(row[y_predict]))
 
       X.append(x)
+
+    # check limits
+    if len(X) * len(X[0]) > MAX_CELLS:
+        return { 'error': 'This dataset is too large ({} cells vs {} max). Reduce the number of rows or columns.'.format(len(X) * len(X[0]), MAX_CELLS) }
 
     # scale
     if 'scale' in config:
       X = sklearn.preprocessing.scale(X)
 
     learner.fit(X, y)
+    predictions = learner.predict(X)
  
     if y_predict in categorical_cols: # use accuracy
       scores = sklearn.model_selection.cross_val_score(learner, X, y, cv=5, scoring='accuracy')
-      print(scores)
       result = {
-        'skipped': skipped,
         'training_score': learner.score(X, y),
-        'cross_validation_score': scores.mean()
+        'cross_validation_score': scores.mean(),
+        'predictions': predictions.tolist()
       }
     else: # use MSE
       scores = sklearn.model_selection.cross_val_score(learner, X, y, cv=5, scoring='r2')
-      print(scores)
       result = {
-        'skipped': skipped,
         'training_score': learner.score(X, y),
-        'cross_validation_score': scores.mean()
+        'cross_validation_score': scores.mean(),
+        'predictions': predictions.tolist()
       }
 
     return result

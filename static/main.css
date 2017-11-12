@@ -12,3 +12,7 @@ body {
 .dovex-tab-content {
   margin-top: 20px;
 }
+
+.excluded {
+  color: red;
+}

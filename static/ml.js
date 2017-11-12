@@ -9,12 +9,14 @@ var
           yvals = numeric.transpose(data)[y_predict]; 
           param = math.mode(yvals)[0];
           correct = 0;
+          predictions = [];
           for (row in data) {
+            predictions.push(param);
             if (data[row][y_predict] == param) {
               correct += 1;
             } 
           }
-          callback(correct / data.length, correct / data.length, 0);
+          callback({ 'training_score': correct / data.length, 'cross_validation_score': correct / data.length, 'predictions': predictions });
         },
 
         datatype: 'categorical',
@@ -25,15 +27,19 @@ var
     'rf': function() { return server_side_predictor('rf', 'categorical', 'Random Forest'); },
     'svc': function() { return server_side_predictor('svc', 'categorical', 'Support Vector Classifier (SVC)'); },
 
-     // numeric prediction
+    // numeric prediction
     'mean': function() {
       return {
         fit: function(data, x_exclude, y_predict, y_exclude, datatypes, distinct, callback, callback_error) {
           yvals = numeric.transpose(data)[y_predict]; 
           ymean = math.mean(yvals);
+          predictions = [];
+          for (row in data) {
+            predictions.push(ymean);
+          }
           // now calculate r squared => always zero
           // 1 - u/v, u=sum(err2) v=sum(t-m2)
-          callback(0.0, 0.0, 0);
+          callback({ 'training_score': 0.0, 'cross_validation_score': 0.0, 'predictions': predictions });
         },
 
         datatype: 'numeric',
@@ -67,7 +73,7 @@ var
 
   ajax_callback = function(callback) {
     return function(data) {
-      callback(data['result']['training_score'], data['result']['cross_validation_score'], data['result']['skipped']);
+      callback(data['result']);
     }
   },
 
