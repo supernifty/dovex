@@ -34,13 +34,13 @@ Without specifying data types, the software will attempt to infer the datatype o
 * missing data by sample
 * explore input distributions
 * explore relationships between features
+* prediction
 
 ## TODO
-* prediction
 * clustering
 * direct url loading
 
 ## Datasets
 We have included the following public domain datasets:
-* [http://archive.ics.uci.edu/ml/datasets/Iris](Iris)
-* [http://archive.ics.uci.edu/ml/datasets/Forest+Fires](Forest Fires)
+* [Iris](http://archive.ics.uci.edu/ml/datasets/Iris)
+* [Forest Fires](http://archive.ics.uci.edu/ml/datasets/Forest+Fires)
