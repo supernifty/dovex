@@ -30,6 +30,7 @@ def evaluate(data_fh, config, learner):
 
     X = []
     y = []
+    y_labels = set()
     meta = {}
 
     seen = collections.defaultdict(dict)
@@ -67,6 +68,7 @@ def evaluate(data_fh, config, learner):
 
       if y_predict in categorical_cols:
         y.append(row[y_predict])
+        y_labels.add(row[y_predict])
       else:
         y.append(float(row[y_predict]))
 
@@ -82,40 +84,45 @@ def evaluate(data_fh, config, learner):
 
     learner.fit(X, y)
     predictions = learner.predict(X)
- 
+
+    result = { 
+      'predictions': predictions.tolist(),
+      'training_score': learner.score(X, y)
+    }
+
     if y_predict in categorical_cols: # use accuracy
       scores = sklearn.model_selection.cross_val_score(learner, X, y, cv=5, scoring='accuracy')
-      result = {
-        'training_score': learner.score(X, y),
-        'cross_validation_score': scores.mean(),
-        'predictions': predictions.tolist()
-      }
+      result['confusion'] = sklearn.metrics.confusion_matrix(y, predictions, labels=list(y_labels)).tolist()
+      result['y_labels'] = list(y_labels)
     else: # use MSE
       scores = sklearn.model_selection.cross_val_score(learner, X, y, cv=5, scoring='r2')
-      result = {
-        'training_score': learner.score(X, y),
-        'cross_validation_score': scores.mean(),
-        'predictions': predictions.tolist()
-      }
 
+    # feature importance
+
+    result['cross_validation_score'] = scores.mean()
+ 
     return result
 
 def logistic_regression(data_fh, config):
-    return evaluate(data_fh, config, sklearn.linear_model.LogisticRegression(C=1e5))
+    learner = sklearn.linear_model.LogisticRegression(C=1e5)
+    return evaluate(data_fh, config, learner)
 
 def svc(data_fh, config):
-    return evaluate(data_fh, config, sklearn.svm.LinearSVC())
+    learner = sklearn.svm.LinearSVC()
+    return evaluate(data_fh, config, learner)
 
 def random_forest(data_fh, config):
-    return evaluate(data_fh, config, sklearn.ensemble.RandomForestClassifier())
+    learner = sklearn.ensemble.RandomForestClassifier()
+    return evaluate(data_fh, config, learner)
 
 
 def linear_regression(data_fh, config):
-    return evaluate(data_fh, config, sklearn.linear_model.LinearRegression())
+    learner = sklearn.linear_model.LinearRegression()
+    return evaluate(data_fh, config, learner)
 
 def svr(data_fh, config):
-    return evaluate(data_fh, config, sklearn.svm.LinearSVR())
-
+    learner = sklearn.svm.LinearSVR()
+    return evaluate(data_fh, config, learner)
 
 METHODS = {
   'logistic': logistic_regression,

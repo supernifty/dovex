@@ -436,7 +436,6 @@ var
     for (column in g['summary']['columns']) {
       distinct[column] = Object.keys(g['summary']['columns'][column]['distinct']).length;
     }
-    // g['excluded_cols'].add(5); // TODO
     $('#prediction_result').html('<div class="alert alert-info">Processing...</div>')
     predictor.fit(g['data']['data'], g['excluded_rows'], $('#outcome').val(), g['excluded_cols'], g['summary']['datatype'], distinct, prediction_result_callback, prediction_result_callback_error);
   },
@@ -448,12 +447,41 @@ var
   prediction_result_callback = function(result) { // training_score, cross_validation_score, predictions) {
     var predictor = ml[$('#predictor').val()](),
       outcome_datatype = g['summary']['datatype'][$('#outcome').val()]
+    Plotly.purge('confusion');
     if ('error' in result) {
       $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">Error: ' + result['error'] + '</div>');
     }
     else if (outcome_datatype == 'categorical') {
       $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training accuracy: </strong>' + (Math.round(result['training_score'] * 100 * 100) / 100) + '%<br/>' +
         '<strong>Cross validation accuracy: </strong>' + (Math.round(result['cross_validation_score'] * 100 * 100) / 100) + '%</div>');
+      // confusion matrix
+      if ('confusion' in result) {
+        data = [{
+          'x': result['y_labels'],
+          'y': result['y_labels'],
+          'z': result['confusion'],
+          'type': 'heatmap'
+        }];
+        layout = {title: 'Confusion Matrix', xaxis: {title: 'Predicted Class', type: 'category'}, yaxis: {title: 'Actual Class', type: 'category'}, annotations: []};
+        // show values
+        for ( var i = 0; i < result['y_labels'].length; i++ ) {
+          for ( var j = 0; j < result['y_labels'].length; j++ ) {
+            var annotation = {
+              xref: 'x1',
+              yref: 'y1',
+              x: result['y_labels'][j],
+              y: result['y_labels'][i],
+              text: result['confusion'][i][j],
+              showarrow: false,
+              font: {
+                color: 'white'
+              }
+            }
+            layout.annotations.push(annotation);
+          }
+        }
+        Plotly.newPlot("confusion", data, layout, {displayModeBar: false});
+      }
     }
     else {
       $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (Math.round(result['training_score'] * 100) / 100) + '<br/>' +
