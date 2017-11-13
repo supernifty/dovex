@@ -80,7 +80,7 @@ var
           g['summary']['datatype'][column],
           g['summary']['columns'][column]['min'], 
           g['summary']['columns'][column]['max'], 
-          Math.round(g['summary']['columns'][column]['sum'] / g['summary']['columns'][column]['count'] * 10) / 10
+          (g['summary']['columns'][column]['sum'] / g['summary']['columns'][column]['count']).toFixed(1)
         ]);
       }
       else {
@@ -105,7 +105,7 @@ var
       "columnDefs": [ {
         "targets": 1, //  missing%
           "render": function ( data, type, full, meta ) {
-            return Math.round(data * 10) / 10;
+            return data.toFixed(1);
           }
         }
       ],
@@ -452,10 +452,20 @@ var
       $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">Error: ' + result['error'] + '</div>');
     }
     else if (outcome_datatype == 'categorical') {
-      $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training accuracy: </strong>' + (Math.round(result['training_score'] * 100 * 100) / 100) + '%<br/>' +
-        '<strong>Cross validation accuracy: </strong>' + (Math.round(result['cross_validation_score'] * 100 * 100) / 100) + '%</div>');
+      $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training accuracy: </strong>' + ((result['training_score'] * 100).toFixed(1)) + '%<br/>' +
+        '<strong>Cross validation accuracy: </strong>' + ((result['cross_validation_score'] * 100).toFixed(1)) + '%</div>');
       // confusion matrix
       if ('confusion' in result) {
+        // normalize
+        var z = [];
+        result['confusion'].forEach(function(el) {
+          var zr = [], 
+            total = math.sum(el);
+          el.forEach(function(c) {
+            zr.push((100 * c / total).toFixed(1) + '%');
+          })
+          z.push(zr);
+        });
         data = [{
           'x': result['y_labels'],
           'y': result['y_labels'],
@@ -471,7 +481,7 @@ var
               yref: 'y1',
               x: result['y_labels'][j],
               y: result['y_labels'][i],
-              text: result['confusion'][i][j],
+              text: z[i][j],
               showarrow: false,
               font: {
                 color: 'white'
@@ -484,8 +494,8 @@ var
       }
     }
     else {
-      $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (Math.round(result['training_score'] * 100) / 100) + '<br/>' +
-        '<strong>Cross validation R<sup>2</sup>: </strong>' + (Math.round(result['cross_validation_score'] * 100) / 100) + '</div>');
+      $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (result['training_score'].toFixed(2)) + '<br/>' +
+        '<strong>Cross validation R<sup>2</sup>: </strong>' + (result['cross_validation_score'].toFixed(2)) + '</div>');
     }
   },
 

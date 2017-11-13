@@ -7,6 +7,8 @@ import collections
 import csv
 import json
 
+import numpy as np
+
 import sklearn.ensemble
 import sklearn.linear_model
 import sklearn.svm
@@ -92,7 +94,9 @@ def evaluate(data_fh, config, learner):
 
     if y_predict in categorical_cols: # use accuracy
       scores = sklearn.model_selection.cross_val_score(learner, X, y, cv=5, scoring='accuracy')
-      result['confusion'] = sklearn.metrics.confusion_matrix(y, predictions, labels=list(y_labels)).tolist()
+      #cv_predictions = sklearn.model_selection.cross_val_predict(learner, X, y, cv=5)
+      confusion = sklearn.metrics.confusion_matrix(y, predictions, labels=list(y_labels))
+      result['confusion'] = confusion.tolist()
       result['y_labels'] = list(y_labels)
     else: # use MSE
       scores = sklearn.model_selection.cross_val_score(learner, X, y, cv=5, scoring='r2')
