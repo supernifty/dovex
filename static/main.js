@@ -447,7 +447,7 @@ var
   prediction_result_callback = function(result) { // training_score, cross_validation_score, predictions) {
     var predictor = ml[$('#predictor').val()](),
       outcome_datatype = g['summary']['datatype'][$('#outcome').val()]
-    Plotly.purge('confusion');
+    Plotly.purge(document.getElementById('confusion'));
     if ('error' in result) {
       $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">Error: ' + result['error'] + '</div>');
     }
@@ -466,11 +466,12 @@ var
           })
           z.push(zr);
         });
+
         data = [{
-          'x': result['y_labels'],
-          'y': result['y_labels'],
-          'z': result['confusion'],
-          'type': 'heatmap'
+          x: result['y_labels'],
+          y: result['y_labels'],
+          z: result['confusion'],
+          type: 'heatmap'
         }];
         layout = {title: 'Confusion Matrix', xaxis: {title: 'Predicted Class', type: 'category'}, yaxis: {title: 'Actual Class', type: 'category'}, annotations: []};
         // show values
@@ -490,7 +491,7 @@ var
             layout.annotations.push(annotation);
           }
         }
-        Plotly.newPlot("confusion", data, layout, {displayModeBar: false});
+        Plotly.plot("confusion", data, layout, {displayModeBar: false});
       }
     }
     else {

@@ -97,7 +97,7 @@ def evaluate(data_fh, config, learner):
       #cv_predictions = sklearn.model_selection.cross_val_predict(learner, X, y, cv=5)
       confusion = sklearn.metrics.confusion_matrix(y, predictions, labels=list(y_labels))
       result['confusion'] = confusion.tolist()
-      result['y_labels'] = list(y_labels)
+      result['y_labels'] = [' {}'.format(y) for y in list(y_labels)] # plotly acts weird for purely numeric labels
     else: # use MSE
       scores = sklearn.model_selection.cross_val_score(learner, X, y, cv=5, scoring='r2')
 
