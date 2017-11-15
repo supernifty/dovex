@@ -17,7 +17,7 @@ import sklearn.model_selection
 MAX_DISTINCT = 100
 MAX_CELLS = 1e6
 
-def evaluate(data_fh, config, learner):
+def evaluate(data_fh, config, learner, learner_features=None):
     # x_exclude, y_predict, y_exclude, scale?
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
     x_exclude = set([int(x) for x in json.loads(config['x_exclude'])])
@@ -27,7 +27,7 @@ def evaluate(data_fh, config, learner):
 
     # exclude columns with too many distincts
     for i in distinct.keys():
-      if distinct[i] > MAX_DISTINCT:
+      if i in categorical_cols and distinct[i] > MAX_DISTINCT:
         y_exclude.add(i)
 
     X = []
@@ -64,7 +64,6 @@ def evaluate(data_fh, config, learner):
             x.extend(chunk)
           elif cell == '': # don't handle missing float
             return { 'error': 'Cannot train with missing data in numeric column {} on line {}.'.format(idx + 1, lines + 1) }
-            break
           else:
             x.append(float(cell))
 
@@ -102,31 +101,74 @@ def evaluate(data_fh, config, learner):
       scores = sklearn.model_selection.cross_val_score(learner, X, y, cv=5, scoring='r2')
 
     # feature importance
+    if learner_features is not None:
+      result['features'] = map_to_original_features(learner_features(learner), y_exclude, y_predict, distinct, categorical_cols)
 
     result['cross_validation_score'] = scores.mean()
  
     return result
 
+def map_to_original_features(importances, y_exclude, y_predict, distinct, categorical_cols):
+    result = []
+    current_col = 0
+    importance = 0
+    while importance < len(importances):
+      if current_col in y_exclude or current_col == y_predict:
+        result.append(0)
+        current_col += 1
+      else:
+        if current_col in categorical_cols:
+          number_of_columns = distinct[current_col]
+          result.append(sum(importances[importance:importance + number_of_columns]))
+          current_col += 1
+          importance += number_of_columns
+        else:
+          result.append(importances[importance])
+          importance += 1
+          current_col += 1
+
+    return result
+ 
+# helpers
+def logistic_regression_features(learner):
+    return [x*x for x in learner.coef_[0]]
+
+def svc_features(learner):
+    raw = learner.coef_
+    result = np.sum(raw**2, axis=0)
+    return result
+
+def random_forest_features(learner):
+    return learner.feature_importances_
+
+def linear_regression_features(learner):
+    return [x*x for x in learner.coef_]
+
+def svr_features(learner):
+    return [x*x for x in learner.coef_]
+
+# prediction algorithms
+
 def logistic_regression(data_fh, config):
     learner = sklearn.linear_model.LogisticRegression(C=1e5)
-    return evaluate(data_fh, config, learner)
+    return evaluate(data_fh, config, learner, logistic_regression_features)
 
 def svc(data_fh, config):
     learner = sklearn.svm.LinearSVC()
-    return evaluate(data_fh, config, learner)
+    return evaluate(data_fh, config, learner, svc_features)
 
 def random_forest(data_fh, config):
     learner = sklearn.ensemble.RandomForestClassifier()
-    return evaluate(data_fh, config, learner)
+    return evaluate(data_fh, config, learner, random_forest_features)
 
 
 def linear_regression(data_fh, config):
     learner = sklearn.linear_model.LinearRegression()
-    return evaluate(data_fh, config, learner)
+    return evaluate(data_fh, config, learner, linear_regression_features)
 
 def svr(data_fh, config):
     learner = sklearn.svm.LinearSVR()
-    return evaluate(data_fh, config, learner)
+    return evaluate(data_fh, config, learner, svr_features)
 
 METHODS = {
   'logistic': logistic_regression,

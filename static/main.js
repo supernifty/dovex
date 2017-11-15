@@ -448,10 +448,11 @@ var
     var predictor = ml[$('#predictor').val()](),
       outcome_datatype = g['summary']['datatype'][$('#outcome').val()]
     Plotly.purge(document.getElementById('confusion'));
-    if ('error' in result) {
+    Plotly.purge(document.getElementById('feature_importance'));
+    if ('error' in result) { // problem
       $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">Error: ' + result['error'] + '</div>');
     }
-    else if (outcome_datatype == 'categorical') {
+    else if (outcome_datatype == 'categorical') { // categorical predictor
       $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training accuracy: </strong>' + ((result['training_score'] * 100).toFixed(1)) + '%<br/>' +
         '<strong>Cross validation accuracy: </strong>' + ((result['cross_validation_score'] * 100).toFixed(1)) + '%</div>');
       // confusion matrix
@@ -493,10 +494,41 @@ var
         }
         Plotly.plot("confusion", data, layout, {displayModeBar: false});
       }
+      else {
+        // $('#confusion').html('Confusion matrix is not available');
+      }
     }
-    else {
+    else { // numeric predictor
       $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (result['training_score'].toFixed(2)) + '<br/>' +
         '<strong>Cross validation R<sup>2</sup>: </strong>' + (result['cross_validation_score'].toFixed(2)) + '</div>');
+    }
+    if ('features' in result) {
+      // get top 10
+      var indices = new Array(result['features'].length), x = [], y = [];
+      for (var i = 0; i < indices.length; i++ ) {
+        indices[i] = i;
+      }
+      indices.sort(function(a, b) { return result['features'][a] < result['features'][b] ? 1 : -1; });
+
+      for (var i = 0; i < Math.min(10, indices.length); i++) {
+        if (result['features'][indices[i]] == 0) {
+          break;
+        }
+        x.push(g['data']['meta']['header'][indices[i]]);
+        y.push(result['features'][indices[i]]);
+      }
+
+      layout = { title: 'Feature Importance', xaxis: {} },
+      data = [ {
+       x: x,
+       y: y,
+       type: 'bar'
+      } ];
+
+      Plotly.plot("feature_importance", data, layout, {displayModeBar: false});
+    }
+    else {
+      // $('#feature_importance').html('Feature importance is not available');
     }
   },
 
