@@ -56,7 +56,7 @@ var
           // x_exclude, y_predict, y_exclude, scale
           config = {
             method: method,
-            'x_exclude': JSON.stringify(Array.from(x_exclude)), 
+            'x_exclude': x_exclude, // number of missing cols to exclude
             'y_exclude': JSON.stringify(Array.from(y_exclude)),
             'y_predict': y_predict, // number
             'scale': '1',

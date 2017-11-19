@@ -20,7 +20,7 @@ MAX_CELLS = 1e6
 def evaluate(data_fh, config, learner, learner_features=None):
     # x_exclude, y_predict, y_exclude, scale?
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
-    x_exclude = set([int(x) for x in json.loads(config['x_exclude'])])
+    x_exclude = int(config['x_exclude'])
     y_predict = int(config['y_predict'])
     categorical_cols = set([i for i, x in enumerate(json.loads(config['datatype'])) if x == 'categorical'])
     distinct = { int(k): v for k, v in json.loads(config['distinct']).items() }
@@ -39,8 +39,6 @@ def evaluate(data_fh, config, learner, learner_features=None):
     seen_count = collections.defaultdict(int)
     
     for lines, row in enumerate(csv.reader(data_fh)):
-      if lines in x_exclude:
-        continue
       if lines == 0:
         meta['header'] = row
         continue
@@ -51,8 +49,13 @@ def evaluate(data_fh, config, learner, learner_features=None):
  
       # one hot and exclusions
       x = []
+      missing = 0
       for idx, cell in enumerate(row): # each col
         if idx not in y_exclude and idx != y_predict:
+          if cell == '': # missing
+            missing += 1
+            if missing >= x_exclude:
+              break # skip
           if idx in categorical_cols:
             chunk = [0] * distinct[idx]
             if cell in seen[idx]:
@@ -67,13 +70,13 @@ def evaluate(data_fh, config, learner, learner_features=None):
           else:
             x.append(float(cell))
 
-      if y_predict in categorical_cols:
-        y.append(row[y_predict])
-        y_labels.add(row[y_predict])
-      else:
-        y.append(float(row[y_predict]))
-
-      X.append(x)
+      if missing < x_exclude:
+        if y_predict in categorical_cols:
+          y.append(row[y_predict])
+          y_labels.add(row[y_predict])
+        else:
+          y.append(float(row[y_predict]))
+        X.append(x)
 
     # check limits
     if len(X) * len(X[0]) > MAX_CELLS:

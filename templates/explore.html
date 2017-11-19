@@ -51,7 +51,6 @@
       <ul class="nav nav-tabs">
         <li class="active"><a href="#tab_overview" data-toggle="tab">Overview</a></li>
         <li><a href="#tab_missing" data-toggle="tab">Missing Data</a></li>
-        <li class="disabled"><a href="#tab_filter" data-toggle="tab">Filtering</a></li>
         <li><a href="#tab_inputs" data-toggle="tab">Distribution of inputs</a></li>
         <li><a href="#tab_relationship" data-toggle="tab">Relationships between inputs</a></li>
         <li class="disabled"><a href="#tab_cluster" data-toggle="tab">Clustering</a></li>
@@ -88,15 +87,6 @@
        </div>
 
       </div> <!-- overview tab -->
-
-      <!--  filter -->
-      <div class="tab-pane" id="tab_filter">
-
-       <div class="row">
-          <div class="heading">Filter inputs</div>
-       </div>
-
-      </div> <!-- filter tab -->
 
       <!--  missing -->
       <div class="tab-pane" id="tab_missing">
@@ -154,16 +144,21 @@
          <div class="tab-pane" id="tab_predict">
 
        <div class="row">
-          <div class="col-md-5">
+          <div class="col-md-4">
             Select the feature to predict:
             <select id="outcome" class="form-control"></select>
           </div>
-          <div class="col-md-5">
+          <div class="col-md-4">
             Select a prediction algorithm:
             <select id="predictor" class="form-control">
               <option value="majority">Baseline (majority class)</option>
               <option value="linear">Linear Regression</option>
               <option value="logistic">Logistic Regression</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            Missing data:
+            <select id="max_missing" class="form-control">
             </select>
           </div>
         </div>

@@ -11,7 +11,7 @@ var
   },
 
   set_error = function() {
-    $('#summary').attr('class', 'alert alert-error alert-dismissable');
+    $('#summary').attr('class', 'alert alert-danger alert-dismissable');
     $('#summary').html('Failed to load data.'); 
   },
 
@@ -20,20 +20,23 @@ var
       datatype = [],
       missing_row;
 
-    g['excluded_rows'] = new Set();
-    g['excluded_cols'] = new Set();
+    // assume numeric columns until told otherwise
     for (header in g['data']['meta']['header']) { // 0..len
       summary['columns'][header] = {'missing': 0, 'distinct': {}, 'min': 1e9, 'max': -1e9, 'count': 0, 'sum': 0};
       datatype.push('numeric');
     }
 
-    // populate summary
+    // populate summary - missing_row is a list of how many columns are missing for each row
+    // excluding rows marked as to exclude
+    g['max_missing'] = 0;
     for (row in g['data']['data']) {
       missing_row = 0;
       for (col in g['data']['data'][row]) { // 0..col
         if (g['data']['data'][row][col] == '') {
           summary['columns'][col]['missing'] += 1;
-          missing_row += 1;
+          if (!g['excluded_cols'].has(parseInt(col))) { // only count if not excluded
+            missing_row += 1;
+          }
         }
         else { // not missing
           if (!$.isNumeric(g['data']['data'][row][col])) {
@@ -52,14 +55,16 @@ var
         summary['columns'][col]['distinct'][g['data']['data'][row][col]] += 1;
       }
       summary['missing_row'].push(missing_row);
+      g['max_missing'] = Math.max(g['max_missing'], missing_row);
     }
 
     if ('datatype' in g['data']['meta']) {
       datatype = g['data']['meta']['datatype'];
     }
 
-    summary['datatype'] = datatype;
+    g['data']['meta']['datatype'] = datatype; // overwrite with calculated datatypes
     g['summary'] = summary;
+    show_max_missing();
   },
 
   show_overview = function() {
@@ -72,12 +77,12 @@ var
 
     // convert to datatable
     for (column in g['data']['meta']['header']) { // 0..len
-      if (g['summary']['datatype'][column] != 'categorical' && g['summary']['columns'][column]['count'] > 0) {
+      if (g['data']['meta']['datatype'][column] != 'categorical' && g['summary']['columns'][column]['count'] > 0) {
         converted.push([
           g['data']['meta']['header'][column], 
           100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length, 
           Object.keys(g['summary']['columns'][column]['distinct']).length, 
-          g['summary']['datatype'][column],
+          g['data']['meta']['datatype'][column],
           g['summary']['columns'][column]['min'], 
           g['summary']['columns'][column]['max'], 
           (g['summary']['columns'][column]['sum'] / g['summary']['columns'][column]['count']).toFixed(1)
@@ -88,7 +93,7 @@ var
           g['data']['meta']['header'][column], 
           100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length, 
           Object.keys(g['summary']['columns'][column]['distinct']).length, 
-          g['summary']['datatype'][column],
+          g['data']['meta']['datatype'][column],
           '',
           '',
           ''
@@ -96,6 +101,7 @@ var
       }
     }
 
+    $('#table_columns tbody').off('click', 'tr');
     $('#table_columns').DataTable({
       "destroy": true,
       "order": [[ 0, "asc" ]],
@@ -113,39 +119,64 @@ var
         style: 'os',
         selector: 'td:first-child'
       },
+      "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+        if (g["excluded_cols"].has(g['data']['meta']['header'].indexOf(aData[0]))) {
+          $(nRow).addClass("excluded");
+        }
+        return nRow;
+      },
       "data": converted
     });
-    $('#table_columns tbody').on( 'click', 'tr', select_overview);
+    $('#table_columns').width($('.container').width());
+    $('#table_columns tbody').on('click', 'tr', select_overview);
   },
 
   show_missing = function() {
     var
-      layout = { title: '% Missing data for each column', xaxis: {} },
+      layout = { title: '% Missing data for each column', xaxis: {}, barmode: 'stack' },
       x = [], 
-      y = [];
+      y_out = [], 
+      y_in = [];
     
     for (column in g['summary']['columns']) {
+      if (g['excluded_cols'].has(parseInt(column))) {
+        y_out.push(100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length);
+        y_in.push(0);
+      }
+      else {
+        y_out.push(0);
+        y_in.push(100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length);
+      }
       x.push(g['data']['meta']['header'][column]);
-      y.push(100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length);
     }
 
     converted = [ {
        x: x,
-       y: y,
-       type: 'bar'
+       y: y_in,
+       type: 'bar',
+       name: 'Included',
+       color: 'blue'
+    }, {
+       x: x,
+       y: y_out,
+       type: 'bar',
+       name: 'Excluded',
+       color: 'red'
     } ];
 
+    Plotly.purge(document.getElementById("missing_by_column"));
     Plotly.plot("missing_by_column", converted, layout, {displayModeBar: false});
 
     // rows with missing data
     layout = { 
-      title: 'Rows with missing data',
+      title: 'Rows with missing data - excluding ' + g['excluded_cols'].size + ' column(s)',
       bargap: 0.05,
       xaxis: { title: 'Number of columns of missing data' },
       yaxis: { title: 'Number of rows' }
     };
     converted = [ { x: g['summary']['missing_row'], type: 'histogram' } ];
     
+    Plotly.purge(document.getElementById("missing_by_row"));
     Plotly.plot("missing_by_row", converted, layout, {displayModeBar: false});
   },
   
@@ -156,10 +187,11 @@ var
       cols = numeric.transpose(g['data']['data']), 
       converted, x, y, layout,
       width = Math.round(COLS_PER_GRAPH/12 * $('.container').width());
+    $('#distributions').empty();
     for (var col in g['data']['meta']['header']) { // 0.. cols
       x = [];
       y = [];
-      if (g['summary']['datatype'][col] == 'categorical') {
+      if (g['data']['meta']['datatype'][col] == 'categorical') {
         for (distinct in g['summary']['columns'][col]['distinct']) {
            x.push(distinct);
            y.push(g['summary']['columns'][col]['distinct'][distinct]);
@@ -176,6 +208,7 @@ var
         layout = { title: g['data']['meta']['header'][col], xaxis: {}, margin: { r: 0, pad: 0 } };
       }
       target = $('#distributions').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="dist_' + col + '" style="width: ' + width + 'px"></div></div>');
+      Plotly.purge(document.getElementById("dist_" + col));
       Plotly.plot("dist_" + col, converted, layout, {displayModeBar: false});
     }
   },
@@ -190,7 +223,7 @@ var
     for (row in g['data']['data']) { // 0..row
       new_row = [];
       for (col in g['data']['data'][row]) { // 0..col
-        if (g['summary']['datatype'][col] == 'categorical') {
+        if (g['data']['meta']['datatype'][col] == 'categorical') {
           // add number of rows equal to distinct
           for (var key in g['summary']['columns'][col]['distinct'].keys()) { 
             if (key == g['data']['data'][row][col]) {
@@ -257,6 +290,7 @@ var
   },
 
   init_correlations = function() {
+    $('#correlation_feature').empty();
     for (header in g['data']['meta']['header']) {
       $('#correlation_feature').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
     }
@@ -282,7 +316,7 @@ var
 
     // check not too many categories (plot.ly can't handle)
     distinct_count = Object.keys(g['summary']['columns'][feature]['distinct']).length;
-    if (g['summary']['datatype'][feature] == 'categorical' && distinct_count > MAX_CATEGORIES) {
+    if (g['data']['meta']['datatype'][feature] == 'categorical' && distinct_count > MAX_CATEGORIES) {
       $('#correlations').html('<div class="alert alert-danger fade in">This feature has too many categories (<strong>' + distinct_count + '</strong>)</div>');
       return;
     }
@@ -292,7 +326,7 @@ var
         continue;
       }
       // cat vs cat -> stacked bar
-      if (g['summary']['datatype'][col] == 'categorical' && g['summary']['datatype'][feature] == 'categorical') { 
+      if (g['data']['meta']['datatype'][col] == 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') { 
         counts = {}
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
@@ -323,7 +357,7 @@ var
         }
         layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
       }
-      else if (g['summary']['datatype'][col] != 'categorical' && g['summary']['datatype'][feature] != 'categorical') { // num vs num -> scatter
+      else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] != 'categorical') { // num vs num -> scatter
         x = []; 
         y = [];
         for (row in g['data']['data']) {
@@ -338,7 +372,7 @@ var
         }];
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
       }
-      else if (g['summary']['datatype'][col] != 'categorical' && g['summary']['datatype'][feature] == 'categorical') { // col-numeric (x) vs feature-cat (y)
+      else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') { // col-numeric (x) vs feature-cat (y)
         counts = {}
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
@@ -396,9 +430,13 @@ var
   },
 
   init_prediction = function() {
+    var old_header = $('#outcome').val();
     $('#outcome').empty();
     for (header in g['data']['meta']['header']) {
       $('#outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
+    }
+    if (old_header != null) {
+      $('#outcome').val(old_header);
     }
     show_predictors();
     update_excluded();
@@ -417,27 +455,45 @@ var
     else {
       $('#prediction_config').html('<div class="alert alert-info"><strong>Excluded inputs:</strong> ' + excluded_list.join(', ') + '</div>');
     }
+    calculate_summary();
+    show_missing();
   }
 
   show_predictors = function() {
-    var outcome_datatype = g['summary']['datatype'][$('#outcome').val()];
+    var outcome_datatype = g['data']['meta']['datatype'][$('#outcome').val()],
+      old_predictor = $('#predictor').val();
     $('#predictor').empty();
     for (predictor in ml) {
       if (outcome_datatype == ml[predictor]().datatype) {
         $('#predictor').append('<option value="' + predictor + '">' + ml[predictor]().name + '</option>');
       }
     }
+    if (old_predictor != null) {
+      $('#predictor').val(old_predictor);
+    }
   },
+
+  show_max_missing = function() {
+    var old_mm = $('#max_missing').val();
+    $('#max_missing').empty();
+    for (var i = 1; i < g['max_missing']; i++) {
+      $('#max_missing').append('<option value="' + i + '">Exclude rows with ' + i + ' or more missing columns</option>');
+    }
+    $('#max_missing').append('<option selected="selected" value="' + (g['max_missing'] + 1) + '">Include all rows</option>');
+    if (old_mm != null) {
+      $('#max_missing').val(old_mm);
+    }
+  }
 
   show_prediction = function() {
     var predictor = ml[$('#predictor').val()](),
-      outcome_datatype = g['summary']['datatype'][$('#outcome').val()],
+      outcome_datatype = g['data']['meta']['datatype'][$('#outcome').val()],
       distinct = {};
     for (column in g['summary']['columns']) {
       distinct[column] = Object.keys(g['summary']['columns'][column]['distinct']).length;
     }
     $('#prediction_result').html('<div class="alert alert-info">Processing...</div>')
-    predictor.fit(g['data']['data'], g['excluded_rows'], $('#outcome').val(), g['excluded_cols'], g['summary']['datatype'], distinct, prediction_result_callback, prediction_result_callback_error);
+    predictor.fit(g['data']['data'], $('#max_missing').val(), $('#outcome').val(), g['excluded_cols'], g['data']['meta']['datatype'], distinct, prediction_result_callback, prediction_result_callback_error);
   },
 
   prediction_result_callback_error = function() {
@@ -446,15 +502,21 @@ var
 
   prediction_result_callback = function(result) { // training_score, cross_validation_score, predictions) {
     var predictor = ml[$('#predictor').val()](),
-      outcome_datatype = g['summary']['datatype'][$('#outcome').val()]
+      outcome_datatype = g['data']['meta']['datatype'][$('#outcome').val()],
+      prediction_name = g['data']['meta']['header'][$('#outcome').val()] + ' - PREDICTIONS';
     Plotly.purge(document.getElementById('confusion'));
     Plotly.purge(document.getElementById('feature_importance'));
     if ('error' in result) { // problem
       $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">Error: ' + result['error'] + '</div>');
+      return;
     }
-    else if (outcome_datatype == 'categorical') { // categorical predictor
-      $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training accuracy: </strong>' + ((result['training_score'] * 100).toFixed(1)) + '%<br/>' +
-        '<strong>Cross validation accuracy: </strong>' + ((result['cross_validation_score'] * 100).toFixed(1)) + '%</div>');
+    if (outcome_datatype == 'categorical') { // categorical predictor
+      $('#prediction_result').html(
+        '<div class="alert alert-info alert-dismissable">' +
+        '<strong>Training samples: </strong>' + result['predictions'].length + '<br/>' +
+        '<strong>Training accuracy: </strong>' + ((result['training_score'] * 100).toFixed(1)) + '%<br/>' +
+        '<strong>Cross validation accuracy: </strong>' + ((result['cross_validation_score'] * 100).toFixed(1)) + '%<br/>' +
+        '<br/>Predictions have been added to the dataset as <strong>' + prediction_name + '</strong></div>');
       // confusion matrix
       if ('confusion' in result) {
         // normalize
@@ -499,9 +561,12 @@ var
       }
     }
     else { // numeric predictor
-      $('#prediction_result').html('<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (result['training_score'].toFixed(2)) + '<br/>' +
-        '<strong>Cross validation R<sup>2</sup>: </strong>' + (result['cross_validation_score'].toFixed(2)) + '</div>');
+      $('#prediction_result').html(
+        '<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (result['training_score'].toFixed(2)) + '<br/>' +
+        '<strong>Cross validation R<sup>2</sup>: </strong>' + (result['cross_validation_score'].toFixed(2)) + 
+        '<br/>Predictions have been added to the dataset as <strong>' + prediction_name + '</strong></div>');
     }
+
     if ('features' in result) {
       // get top 10
       var indices = new Array(result['features'].length), x = [], y = [];
@@ -530,6 +595,37 @@ var
     else {
       // $('#feature_importance').html('Feature importance is not available');
     }
+
+    add_predictions_to_dataset(prediction_name, result['predictions']); // update dataset with predictions
+  },
+
+  add_predictions_to_dataset = function(prediction_name, predictions) {
+    var cols = numeric.transpose(g['data']['data']), 
+      expanded_predictions = [],
+      max_missing = parseInt($('#max_missing').val());
+
+    if (g['has_predictions']) {
+      cols.pop(); // remove existing data column
+      g['data']['meta']['header'].pop();
+      g['data']['meta']['datatype'].pop();
+    }
+    g['excluded_cols'].add(cols.length);
+    // TODO this only works if no missing data excluded
+    for (var i = 0; i < cols[0].length; i++) {
+      if (g['summary']['missing_row'][i] >= max_missing) {
+        expanded_predictions.push('');
+      }
+      else {
+        expanded_predictions.push(predictions.shift());
+      }
+    }
+    cols.push(expanded_predictions);
+    g['data']['data'] = numeric.transpose(cols);
+    g['data']['meta']['header'].push(prediction_name);
+    g['data']['meta']['datatype'].push(g['data']['meta']['datatype'][$('#outcome').val()]);
+    g['has_predictions'] = true;
+    // recalculate
+    calculate_all();
   },
 
   select_overview = function() {
@@ -553,8 +649,7 @@ var
     }
   },
 
-  process = function(data) {
-    g['data'] = data;
+  calculate_all = function() {
     g['queue'] = [
       show_overview,
       calculate_summary,
@@ -563,13 +658,20 @@ var
       show_column_dists,
       init_correlations,
       show_correlations,
-      init_prediction,
+      init_prediction
     ];
 
     run_queue();
+  },
+
+  process = function(data) {
+    g['data'] = data;
+    g['excluded_cols'] = new Set();
+    g['has_predictions'] = false;
+
+    calculate_all();
 
     $('#correlation_feature').change(show_correlations);
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
-
   };
