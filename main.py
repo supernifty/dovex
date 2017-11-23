@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+'''
+    main web interface
+'''
 
-import collections
 import csv
-import math
 import os
+import re
 import urllib
 import uuid
 
@@ -43,13 +45,19 @@ def main():
 
 
 def get_fh(filename):
-  if filename.startswith('url='):
-    return urllib.urlopen(filename[4:])
-  else:
-    return open(os.path.join(app.config['UPLOAD_FOLDER'], filename)) 
+    '''
+        opens specified filehandle
+        currently only supports files
+    '''
+    if filename.startswith('url='):
+        return urllib.urlopen(filename[4:])
+    else:
+        if re.match(r'^[\w.-]+$', filename) is None:
+            raise FileNotFoundError
+        return open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
 @app.route('/data/<filename>')
-def data(filename):
+def json_data(filename):
     '''
         provide data as json
     '''
@@ -103,7 +111,10 @@ def process(filename):
         flask.abort(404, 'data not found')
 
 @app.route('/help')
-def help():
+def show_help():
+    '''
+        render help page
+    '''
     return flask.render_template('help.html')
 
 if __name__ == '__main__':

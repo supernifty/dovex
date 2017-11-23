@@ -432,11 +432,14 @@ var
   init_prediction = function() {
     var old_header = $('#outcome').val();
     $('#outcome').empty();
+    $('#projection_outcome').empty();
     for (header in g['data']['meta']['header']) {
       $('#outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
+      $('#projection_outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
     }
     if (old_header != null) {
       $('#outcome').val(old_header);
+      $('#projection_outcome').val(old_header);
     }
     show_predictors();
     update_excluded();
@@ -474,14 +477,21 @@ var
   },
 
   show_max_missing = function() {
-    var old_mm = $('#max_missing').val();
+    var old_mm = $('#max_missing').val(),
+      old_mmp = $('#max_missing_projection').val();
     $('#max_missing').empty();
+    $('#max_missing_projection').empty();
     for (var i = 1; i < g['max_missing']; i++) {
       $('#max_missing').append('<option value="' + i + '">Exclude rows with ' + i + ' or more missing columns</option>');
+      $('#max_missing_projection').append('<option value="' + i + '">Exclude rows with ' + i + ' or more missing columns</option>');
     }
     $('#max_missing').append('<option selected="selected" value="' + (g['max_missing'] + 1) + '">Include all rows</option>');
+    $('#max_missing_projection').append('<option selected="selected" value="' + (g['max_missing'] + 1) + '">Include all rows</option>');
     if (old_mm != null) {
       $('#max_missing').val(old_mm);
+    }
+    if (old_mmp != null) {
+      $('#max_missing_projection').val(old_mmp);
     }
   }
 
@@ -610,7 +620,6 @@ var
       g['data']['meta']['datatype'].pop();
     }
     g['excluded_cols'].add(cols.length);
-    // TODO this only works if no missing data excluded
     for (var i = 0; i < cols[0].length; i++) {
       if (g['summary']['missing_row'][i] >= max_missing) {
         expanded_predictions.push('');
@@ -626,6 +635,86 @@ var
     g['has_predictions'] = true;
     // recalculate
     calculate_all();
+  },
+
+  show_reduction = function() {
+    var reducer = ml[$('#reducer').val()](),
+      distinct = {};
+    for (column in g['summary']['columns']) {
+      distinct[column] = Object.keys(g['summary']['columns'][column]['distinct']).length;
+    }
+    $('#reduction_result').html('<div class="alert alert-info">Processing...</div>')
+    reducer.fit(g['data']['data'], $('#max_missing_projection').val(), null, g['excluded_cols'], g['data']['meta']['datatype'], distinct, reduction_result_callback, reduction_result_callback_error);
+  },
+
+  reduction_result_callback = function(result) { 
+    var traces = {}, 
+        converted = [],
+        layout = { title: 'Projection'},
+        datatype = g['data']['meta']['datatype'][$('#projection_outcome').val()],
+        feature_col = $('#projection_outcome').val(),
+        max_missing = parseInt($('#max_missing_projection').val()),
+        point = 0;
+    Plotly.purge(document.getElementById('reduction'));
+    Plotly.purge(document.getElementById('projection_features'));
+    // TODO this only works if no missing data excluded
+    for (var i=0; i < g['data']['data'].length; i++) {
+      if (g['summary']['missing_row'][i] >= max_missing) {
+        continue
+      }
+      value = g['data']['data'][i][feature_col];
+      if (datatype == 'categorical') {
+        if (!(value in traces)) {
+          traces[value] = {'x': [], 'y': [], name: value, mode: 'markers', type: 'scatter'};
+        }
+        traces[value]['x'].push(result['projection'][point][0]);
+        traces[value]['y'].push(result['projection'][point][1]);
+      }
+      else {
+        if (!('' in traces)) {
+          traces[''] = {'x': [], 'y': [], mode: 'markers', type: 'scatter', showscale: true, marker: {color: []}};
+        }
+        traces['']['x'].push(result['projection'][point][0]);
+        traces['']['y'].push(result['projection'][point][1]);
+        traces['']['marker']['color'].push(value);
+      }
+      point++; 
+    }
+    for (var trace in traces) {
+      converted.push(traces[trace]);
+    }
+    layout = { title: 'Projection' };
+    Plotly.plot("reduction", converted, layout);
+    if ('features' in result) {
+      // get top 10
+      var indices = new Array(result['features'].length), x = [], y = [];
+      for (var i = 0; i < indices.length; i++ ) {
+        indices[i] = i;
+      }
+      indices.sort(function(a, b) { return result['features'][a] < result['features'][b] ? 1 : -1; });
+
+      for (var i = 0; i < Math.min(10, indices.length); i++) {
+        if (result['features'][indices[i]] == 0) {
+          break;
+        }
+        x.push(g['data']['meta']['header'][indices[i]]);
+        y.push(result['features'][indices[i]]);
+      }
+
+      layout = { title: 'Feature Importance', xaxis: {} },
+      data = [ {
+       x: x,
+       y: y,
+       type: 'bar'
+      } ];
+
+      Plotly.plot("projection_features", data, layout, {displayModeBar: false});
+    }
+    $('#reduction_result').html('<div class="alert alert-info">' + point + ' data points transformed.</div>')
+  },
+
+  reduction_result_callback_error = function() {
+      $('#reduction_result').html('<div class="alert alert-danger alert-dismissable">An error occurred. Analysis failed.</div>')
   },
 
   select_overview = function() {
@@ -674,4 +763,5 @@ var
     $('#correlation_feature').change(show_correlations);
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
+    $('#run_reducer').click(show_reduction);
   };

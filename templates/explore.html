@@ -39,7 +39,7 @@
           <ul class="nav navbar-nav navbar-left">
             <li><a href="{{ url_for('main') }}">Upload</a></li>
             <li class="active"><a href="#">Detail <span class="sr-only">(current)</span></a></li>
-            <li><a href="{{ url_for('help') }}">Help</a></li>
+            <li><a href="{{ url_for('show_help') }}">Help</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
           </ul>
@@ -53,7 +53,7 @@
         <li><a href="#tab_missing" data-toggle="tab">Missing Data</a></li>
         <li><a href="#tab_inputs" data-toggle="tab">Distribution of inputs</a></li>
         <li><a href="#tab_relationship" data-toggle="tab">Relationships between inputs</a></li>
-        <li class="disabled"><a href="#tab_cluster" data-toggle="tab">Clustering</a></li>
+        <li><a href="#tab_cluster" data-toggle="tab">Dimensionality Reduction</a></li>
         <li><a href="#tab_predict" data-toggle="tab">Prediction</a></li>
       </ul>
 
@@ -132,9 +132,44 @@
          <div class="tab-pane" id="tab_cluster">
 
        <div class="row">
-          <div class="heading">Principal Component Analysis (PCA)</div>
+          <div class="col-md-4">
+            Select a dimensionality reduction algorithm:
+            <select id="reducer" class="form-control">
+              <option value='pca'>PCA</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            Select a feature to highlight:
+            <select id="projection_outcome" class="form-control"></select>
+          </div>
+          <div class="col-md-4">
+            Missing data:
+            <select id="max_missing_projection" class="form-control">
+            </select>
+          </div>
+       </div>
+
+       <div class="row">&nbsp;</div>
+
+       <div class="row">
+          <div class="col-md-12">
+            <button type="button" class="btn btn-primary" id="run_reducer">Start Analysis</button>
+          </div>
+       </div>
+
+       <div class="row">&nbsp;</div>
+
+       <div class="row">
+          <div class="col-md-12" id="reduction_result">
+          </div>
+       </div>
+
+       <div class="row">
           <div class="col-md-6">
-            <div id="pca" style="height:480px;"></div>
+            <div id="reduction" style="height:480px;"></div>
+          </div>
+          <div class="col-md-6">
+            <div id="projection_features" style="height:480px;"></div>
           </div>
        </div>
 
@@ -151,9 +186,6 @@
           <div class="col-md-4">
             Select a prediction algorithm:
             <select id="predictor" class="form-control">
-              <option value="majority">Baseline (majority class)</option>
-              <option value="linear">Linear Regression</option>
-              <option value="logistic">Logistic Regression</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -202,14 +234,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.15.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
-    <script src="{{ url_for('static', filename='ml.js', v='171109') }}"></script>
-    <script src="{{ url_for('static', filename='main.js', v='171109') }}"></script>
+    <script src="{{ url_for('static', filename='ml.js', v='171121') }}"></script>
+    <script src="{{ url_for('static', filename='main.js', v='171121') }}"></script>
     <script>
 $(document).ready(function () {
   set_update('Downloading dataset...');
   set_url("{{ url_for('process', filename=filename) }}");
   $.ajax({
-    url: "{{ url_for('data', filename=filename) }}"
+    url: "{{ url_for('json_data', filename=filename) }}"
   })
   .done(process)
   .fail(set_error);
