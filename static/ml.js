@@ -12,7 +12,8 @@ var
     'svr': function() { return server_side_predictor('svr', 'numeric', 'Support Vector Regression'); },
 
     // dimensionality reduction
-    'pca': function() { return server_side_predictor('pca', 'reduce', 'PCA'); }
+    'pca': function() { return server_side_predictor('pca', 'reduce', 'PCA'); },
+    'mds': function() { return server_side_predictor('mds', 'reduce', 'MDS'); }
   },
 
   server_side_predictor = function(method, datatype, name) {

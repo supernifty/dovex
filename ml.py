@@ -12,13 +12,21 @@ import numpy as np
 import sklearn.ensemble
 import sklearn.decomposition
 import sklearn.linear_model
+import sklearn.manifold
 import sklearn.svm
 import sklearn.model_selection
 
 MAX_DISTINCT = 100
 MAX_CELLS = 1e6
+MAX_ROWS = {
+    'mds': 1000
+}
 
 def preprocess(data_fh, config):
+    '''
+        puts the input data into X and y in an appropriate format for analysis
+        one hot encoding, normalization
+    '''
     # x_exclude, y_predict, y_exclude, scale?
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
     x_exclude = int(config['x_exclude']) # max missing cols
@@ -38,7 +46,7 @@ def preprocess(data_fh, config):
 
     seen = collections.defaultdict(dict)
     seen_count = collections.defaultdict(int)
-    
+
     for lines, row in enumerate(csv.reader(data_fh)):
         if lines == 0:
             meta['header'] = row
@@ -123,7 +131,7 @@ def evaluate(data_fh, config, learner, learner_features=None):
 
     return result
 
-def project(data_fh, config, projector):
+def project(data_fh, config, projector, has_features=True, max_rows=None):
     '''
         reduce dimensionality
     '''
@@ -131,15 +139,28 @@ def project(data_fh, config, projector):
     if 'error' in pre:
         return pre
 
+    if max_rows is not None and len(pre['X']) > max_rows:
+        return {'error': 'Too many rows for this method: {} > {}'.format(len(pre['X']), max_rows)}
+
     projection = projector.fit_transform(pre['X'])
-    result = {
-        'projection': projection.tolist(),
-        'features': map_to_original_features(projection_features(projector), pre['y_exclude'], pre['y_predict'], pre['distinct'], pre['categorical_cols'])
-    }
+    if has_features:
+        result = {
+            'projection': projection.tolist(),
+            'features': map_to_original_features(projection_features(projector), pre['y_exclude'], pre['y_predict'], pre['distinct'], pre['categorical_cols']),
+            'features_2': map_to_original_features(projection_features(projector, component=1), pre['y_exclude'], pre['y_predict'], pre['distinct'], pre['categorical_cols'])
+        }
+    else:
+        result = {
+            'projection': projection.tolist()
+        }
     return result
 
-def projection_features(projector):
-    return [x*x for x in projector.components_[0]]
+def projection_features(projector, component=0):
+    '''
+        returns weighting of projection input features on component 0
+    '''
+    #return [x*x for x in projector.components_[component]]
+    return [abs(x) for x in projector.components_[component]]
 
 def map_to_original_features(importances, y_exclude, y_predict, distinct, categorical_cols):
     '''
@@ -241,7 +262,14 @@ def pca(data_fh, config):
         cluster data using pca
     '''
     projector = sklearn.decomposition.PCA(n_components=2)
-    return project(data_fh, config, projector)
+    return project(data_fh, config, projector, has_features=True)
+
+def mds(data_fh, config):
+    '''
+        cluster data using pca
+    '''
+    projector = sklearn.manifold.MDS(n_components=2, max_iter=100, verbose=1)
+    return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['mds'])
 
 METHODS = {
     'logistic': logistic_regression,
@@ -249,5 +277,6 @@ METHODS = {
     'rf': random_forest,
     'linear': linear_regression,
     'svr': svr,
-    'pca': pca
+    'pca': pca,
+    'mds': mds
 }

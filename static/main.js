@@ -165,7 +165,7 @@ var
     } ];
 
     Plotly.purge(document.getElementById("missing_by_column"));
-    Plotly.plot("missing_by_column", converted, layout, {displayModeBar: false});
+    Plotly.plot("missing_by_column", converted, layout, {displayModeBar: g['displayModeBar']});
 
     // rows with missing data
     layout = { 
@@ -177,7 +177,7 @@ var
     converted = [ { x: g['summary']['missing_row'], type: 'histogram' } ];
     
     Plotly.purge(document.getElementById("missing_by_row"));
-    Plotly.plot("missing_by_row", converted, layout, {displayModeBar: false});
+    Plotly.plot("missing_by_row", converted, layout, {displayModeBar: g['displayModeBar']});
   },
   
   show_column_dists = function() {
@@ -209,115 +209,39 @@ var
       }
       target = $('#distributions').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="dist_' + col + '" style="width: ' + width + 'px"></div></div>');
       Plotly.purge(document.getElementById("dist_" + col));
-      Plotly.plot("dist_" + col, converted, layout, {displayModeBar: false});
+      Plotly.plot("dist_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
     }
   },
   
-  show_mds = function() {
-  },
-
-  one_hot = function() {
-    // converts all data to numeric by one hot encoding categorical
-    var result = [],
-      new_row;
-    for (row in g['data']['data']) { // 0..row
-      new_row = [];
-      for (col in g['data']['data'][row]) { // 0..col
-        if (g['data']['meta']['datatype'][col] == 'categorical') {
-          // add number of rows equal to distinct
-          for (var key in g['summary']['columns'][col]['distinct'].keys()) { 
-            if (key == g['data']['data'][row][col]) {
-              new_row.push(1);
-            }
-            else {
-              new_row.push(0);
-            }
-          }
-        }
-        else {
-          new_row.push(Number(g['data']['data'][row][col])); // unchanged
-        }
-      }
-      result.push(new_row);
-    }
-    return result;
-  },
-
-  normalize = function(data) {
-    // calculate mean and sd of each column
-    
-    var result = [],
-      cols = numeric.transpose(data),
-      means = math.mean(cols, 1),
-      sds = [];
-
-    for (col in cols) {
-      sds.push(math.std(cols[col]));
-    }
-
-    // apply
-    for (row in data) { // 0..row
-      new_row = [];
-      for (col in data[row]) { // 0..col
-        new_row.push((data[row][col] - means[col]) / sds[col]);
-      }
-      result.push(new_row);
-    }
-    return result;
-  },
-
-  pca_cov = function(X) {
-    // Return matrix of all principal components as column vectors
-    var m = X.length;
-    var sigma = numeric.div(numeric.dot(numeric.transpose(X), X), m);
-    return numeric.svd(sigma).U;
-  },
-
-  pca_svd = function(X) {
-    // Return matrix of all principal components as column vectors
-    var m = X.length;
-    var sigma = numeric.div(numeric.dot(numeric.transpose(X), X), m);
-    return numeric.svd(sigma).U;
-  },
-
-  show_pca = function() {
-    var inp = normalize(one_hot()),
-      eigenvectors = pca_svd(inp),
-      transformer = [eigenvectors[0], eigenvectors[1]],
-      transformed = numeric.dot(transformer, numeric.transpose(inp)); // 2 x d * d x n
-    
-    Plotly.plot("pca", [{ x: transformed[0], y: transformed[1], mode: 'markers', type: 'scatter' }], { title: 'PCA' }, {displayModeBar: false});
-  },
-
-  init_correlations = function() {
-    $('#correlation_feature').empty();
+  init_relationships = function() {
+    $('#relationship_feature').empty();
     for (header in g['data']['meta']['header']) {
-      $('#correlation_feature').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
+      $('#relationship_feature').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
     }
   },
 
-  show_correlations = function() {
+  show_relationships = function() {
       const
       COLS_PER_GRAPH = 6,
       MAX_CATEGORIES = 100;
     var 
       cols = numeric.transpose(g['data']['data']), 
-      feature = $('#correlation_feature').val(),
+      feature = $('#relationship_feature').val(),
       converted, x, y, layout,
       width = Math.round(COLS_PER_GRAPH/12 * $('.container').width());
 
     // clear existing plots if any
-    $('#correlations div div').each(function () {
+    $('#relationships div div').each(function () {
         if (this.id != '') {
           Plotly.purge(this.id);
         }
     });
-    $('#correlations').empty();
+    $('#relationships').empty();
 
     // check not too many categories (plot.ly can't handle)
     distinct_count = Object.keys(g['summary']['columns'][feature]['distinct']).length;
     if (g['data']['meta']['datatype'][feature] == 'categorical' && distinct_count > MAX_CATEGORIES) {
-      $('#correlations').html('<div class="alert alert-danger fade in">This feature has too many categories (<strong>' + distinct_count + '</strong>)</div>');
+      $('#relationships').html('<div class="alert alert-danger fade in">This feature has too many categories (<strong>' + distinct_count + '</strong>)</div>');
       return;
     }
 
@@ -424,8 +348,8 @@ var
         }
         layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }};
       }
-      $('#correlations').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
-      Plotly.plot("corr_" + col, converted, layout, {displayModeBar: false});
+      $('#relationships').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
+      Plotly.plot("corr_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
     }
   },
 
@@ -510,6 +434,33 @@ var
       $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">An error occurred. Prediction failed.</div>')
   },
 
+  plot_prediction_features = function(data, target) {
+      // get top 10
+      var indices = new Array(data.length), x = [], y = [];
+      for (var i = 0; i < indices.length; i++ ) {
+        indices[i] = i;
+      }
+      indices.sort(function(a, b) { return data[a] < data[b] ? 1 : -1; });
+
+      for (var i = 0; i < Math.min(10, indices.length); i++) {
+        if (data[indices[i]] == 0) {
+          break;
+        }
+        x.push(g['data']['meta']['header'][indices[i]]);
+        y.push(data[indices[i]]);
+      }
+
+      layout = { title: 'Feature Importance', xaxis: {} },
+      data = [ {
+       x: x,
+       y: y,
+       type: 'bar'
+      } ];
+
+      Plotly.plot(target, data, layout, {displayModeBar: g['displayModeBar']});
+ 
+  }
+
   prediction_result_callback = function(result) { // training_score, cross_validation_score, predictions) {
     var predictor = ml[$('#predictor').val()](),
       outcome_datatype = g['data']['meta']['datatype'][$('#outcome').val()],
@@ -564,7 +515,7 @@ var
             layout.annotations.push(annotation);
           }
         }
-        Plotly.plot("confusion", data, layout, {displayModeBar: false});
+        Plotly.plot("confusion", data, layout, {displayModeBar: g['displayModeBar']});
       }
       else {
         // $('#confusion').html('Confusion matrix is not available');
@@ -578,30 +529,8 @@ var
     }
 
     if ('features' in result) {
-      // get top 10
-      var indices = new Array(result['features'].length), x = [], y = [];
-      for (var i = 0; i < indices.length; i++ ) {
-        indices[i] = i;
-      }
-      indices.sort(function(a, b) { return result['features'][a] < result['features'][b] ? 1 : -1; });
-
-      for (var i = 0; i < Math.min(10, indices.length); i++) {
-        if (result['features'][indices[i]] == 0) {
-          break;
-        }
-        x.push(g['data']['meta']['header'][indices[i]]);
-        y.push(result['features'][indices[i]]);
-      }
-
-      layout = { title: 'Feature Importance', xaxis: {} },
-      data = [ {
-       x: x,
-       y: y,
-       type: 'bar'
-      } ];
-
-      Plotly.plot("feature_importance", data, layout, {displayModeBar: false});
-    }
+      plot_prediction_features(result['features'], 'feature_importance');
+   }
     else {
       // $('#feature_importance').html('Feature importance is not available');
     }
@@ -647,6 +576,32 @@ var
     reducer.fit(g['data']['data'], $('#max_missing_projection').val(), null, g['excluded_cols'], g['data']['meta']['datatype'], distinct, reduction_result_callback, reduction_result_callback_error);
   },
 
+  projection_feature = function(data, target, component) {
+      // get top 10
+      var indices = new Array(data.length), x = [], y = [];
+      for (var i = 0; i < indices.length; i++ ) {
+        indices[i] = i;
+      }
+      indices.sort(function(a, b) { return data[a] < data[b] ? 1 : -1; });
+
+      for (var i = 0; i < Math.min(10, indices.length); i++) {
+        if (data[indices[i]] == 0) {
+          break;
+        }
+        x.push(g['data']['meta']['header'][indices[i]]);
+        y.push(data[indices[i]]);
+      }
+
+      layout = { title: 'Feature Importance (component ' + component + ')', xaxis: {} },
+      converted = [ {
+       x: x,
+       y: y,
+       type: 'bar'
+      } ];
+
+      Plotly.plot(target, converted, layout, {displayModeBar: g['displayModeBar']});
+  },
+
   reduction_result_callback = function(result) { 
     var traces = {}, 
         converted = [],
@@ -655,9 +610,14 @@ var
         feature_col = $('#projection_outcome').val(),
         max_missing = parseInt($('#max_missing_projection').val()),
         point = 0;
+    
+    if ('error' in result) {
+      $('#reduction_result').html('<div class="alert alert-danger alert-dismissable">An error occurred: ' + result['error'] + '</div>')
+      return;
+    }
     Plotly.purge(document.getElementById('reduction'));
     Plotly.purge(document.getElementById('projection_features'));
-    // TODO this only works if no missing data excluded
+    Plotly.purge(document.getElementById('projection_features_2'));
     for (var i=0; i < g['data']['data'].length; i++) {
       if (g['summary']['missing_row'][i] >= max_missing) {
         continue
@@ -686,29 +646,8 @@ var
     layout = { title: 'Projection' };
     Plotly.plot("reduction", converted, layout);
     if ('features' in result) {
-      // get top 10
-      var indices = new Array(result['features'].length), x = [], y = [];
-      for (var i = 0; i < indices.length; i++ ) {
-        indices[i] = i;
-      }
-      indices.sort(function(a, b) { return result['features'][a] < result['features'][b] ? 1 : -1; });
-
-      for (var i = 0; i < Math.min(10, indices.length); i++) {
-        if (result['features'][indices[i]] == 0) {
-          break;
-        }
-        x.push(g['data']['meta']['header'][indices[i]]);
-        y.push(result['features'][indices[i]]);
-      }
-
-      layout = { title: 'Feature Importance', xaxis: {} },
-      data = [ {
-       x: x,
-       y: y,
-       type: 'bar'
-      } ];
-
-      Plotly.plot("projection_features", data, layout, {displayModeBar: false});
+      projection_feature(result['features'], "projection_features", 1 );
+      projection_feature(result['features_2'], "projection_features_2", 2 );
     }
     $('#reduction_result').html('<div class="alert alert-info">' + point + ' data points transformed.</div>')
   },
@@ -745,8 +684,8 @@ var
       show_columns,
       show_missing,
       show_column_dists,
-      init_correlations,
-      show_correlations,
+      init_relationships,
+      show_relationships,
       init_prediction
     ];
 
@@ -757,10 +696,11 @@ var
     g['data'] = data;
     g['excluded_cols'] = new Set();
     g['has_predictions'] = false;
+    g['displayModeBar'] = true;
 
     calculate_all();
 
-    $('#correlation_feature').change(show_correlations);
+    $('#relationship_feature').change(show_relationships);
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
     $('#run_reducer').click(show_reduction);

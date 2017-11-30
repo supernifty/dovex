@@ -53,6 +53,7 @@
         <li><a href="#tab_missing" data-toggle="tab">Missing Data</a></li>
         <li><a href="#tab_inputs" data-toggle="tab">Distribution of inputs</a></li>
         <li><a href="#tab_relationship" data-toggle="tab">Relationships between inputs</a></li>
+        <li class="disabled"><a href="#tab_correlation" data-toggle="tab">Correlation Matrix</a></li>
         <li><a href="#tab_cluster" data-toggle="tab">Dimensionality Reduction</a></li>
         <li><a href="#tab_predict" data-toggle="tab">Prediction</a></li>
       </ul>
@@ -119,14 +120,22 @@
        <div class="row">
           <div class="col-md-6">
             Select a feature of interest:
-            <select id="correlation_feature" class="form-control"></select>
+            <select id="relationship_feature" class="form-control"></select>
           </div>
        </div>
        <div class="row">
-         <div id="correlations" class="col-md-12"> </div>
+         <div id="relationships" class="col-md-12"> </div>
        </div>
 
       </div> <!-- relationship tab -->
+
+      <!--  correlation -->
+      <div class="tab-pane" id="tab_correlation">
+        <div class="row">
+          <div class="col-md-12">
+          </div>
+        </div>
+      </div>
 
       <!--  cluster -->
          <div class="tab-pane" id="tab_cluster">
@@ -136,6 +145,7 @@
             Select a dimensionality reduction algorithm:
             <select id="reducer" class="form-control">
               <option value='pca'>PCA</option>
+              <option value='mds'>MDS</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -172,6 +182,15 @@
             <div id="projection_features" style="height:480px;"></div>
           </div>
        </div>
+
+       <div class="row">
+          <div class="col-md-6">
+          </div>
+          <div class="col-md-6">
+            <div id="projection_features_2" style="height:480px;"></div>
+          </div>
+       </div>
+
 
          </div> <!-- cluster tab -->
 
