@@ -696,7 +696,7 @@ var
     g['data'] = data;
     g['excluded_cols'] = new Set();
     g['has_predictions'] = false;
-    g['displayModeBar'] = true;
+    g['displayModeBar'] = false;
 
     calculate_all();
 
