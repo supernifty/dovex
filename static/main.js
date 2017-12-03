@@ -384,6 +384,7 @@ var
     }
     calculate_summary();
     show_missing();
+    g['data_ok'] = false;
   }
 
   show_predictors = function() {
@@ -670,6 +671,30 @@ var
     update_excluded();
   },
 
+  show_data = function() {
+    if (!g['data_ok']) {
+      var converted = g['data']['data'];
+      var tableHeaders = '';
+      $.each(g['data']['meta']['header'], function(i, val) {
+        //TODO if (!g['excluded_cols'].has(parseInt(i))) { // only count if not excluded
+          tableHeaders += "<th>" + val + "</th>";
+        //}
+      });
+       
+      $("#table_data").empty();
+      $("#table_data").append('<thead><tr>' + tableHeaders + '</tr></thead>');
+  
+      $('#table_data').DataTable({
+        "destroy": true,
+        "order": [[ 0, "asc" ]],
+        "bInfo" : false,
+        "pageLength": 50,
+        "data": converted
+      });
+      g['data_ok'] = true;
+    }
+  },
+
   run_queue = function() {
     if (g['queue'].length > 0) {
       g['queue'].shift()();
@@ -697,6 +722,7 @@ var
     g['excluded_cols'] = new Set();
     g['has_predictions'] = false;
     g['displayModeBar'] = false;
+    g['data_ok'] = false;
 
     calculate_all();
 
@@ -704,4 +730,10 @@ var
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
     $('#run_reducer').click(show_reduction);
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+      var target = $(e.target).attr("href") // activated tab
+      if (target == '#tab_data') {
+        show_data();
+      }
+    });
   };

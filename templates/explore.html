@@ -56,6 +56,7 @@
         <li class="disabled"><a href="#tab_correlation" data-toggle="tab">Correlation Matrix</a></li>
         <li><a href="#tab_cluster" data-toggle="tab">Dimensionality Reduction</a></li>
         <li><a href="#tab_predict" data-toggle="tab">Prediction</a></li>
+        <li><a href="#tab_data" data-toggle="tab">Data</a></li>
       </ul>
 
       <div class="tab-content dovex-tab-content">
@@ -142,7 +143,7 @@
 
        <div class="row">
           <div class="col-md-4">
-            Select a dimensionality reduction algorithm:
+            Select a projection algorithm:
             <select id="reducer" class="form-control">
               <option value='pca'>PCA</option>
               <option value='mds'>MDS</option>
@@ -240,6 +241,13 @@
        </div>
 
     </div> <!-- predict tab -->
+
+    <div class="tab-pane" id="tab_data">
+      <div class="row">
+        <table id="table_data" class="display compact">
+        </table>
+      </div>
+    </div> <!-- data tab -->
 
     </div> <!-- tab content -->
 
