@@ -53,7 +53,7 @@
         <li><a href="#tab_missing" data-toggle="tab">Missing Data</a></li>
         <li><a href="#tab_inputs" data-toggle="tab">Distribution of inputs</a></li>
         <li><a href="#tab_relationship" data-toggle="tab">Relationships between inputs</a></li>
-        <li class="disabled"><a href="#tab_correlation" data-toggle="tab">Correlation Matrix</a></li>
+        <li><a href="#tab_correlation" data-toggle="tab">Correlation Matrix</a></li>
         <li><a href="#tab_cluster" data-toggle="tab">Dimensionality Reduction</a></li>
         <li><a href="#tab_predict" data-toggle="tab">Prediction</a></li>
         <li><a href="#tab_data" data-toggle="tab">Data</a></li>
@@ -134,6 +134,26 @@
       <div class="tab-pane" id="tab_correlation">
         <div class="row">
           <div class="col-md-12">
+            <div id="correlation"></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            <p>This heatmap indicates a p-value in which the null hypothesis is that the two columns are independent and not correlated.
+              <ul>
+                <li>A <strong>high p-value</strong> indicates the columns are independent.</li>
+                <li>A <strong>low p-value</strong> indicates the columns are correlated.</li>
+                <li><strong>N/A</strong> indicates the test could not be performed (for Chi-square typically the expected counts are too low).</li>
+              </ul>
+            </p>
+            <p>
+              The statistical test performed is dependent on the type of data of the two features of interest:
+              <ul>
+                <li><strong>Categorical vs Categorical:</strong> Chi-square test</li>
+                <li><strong>Numeric vs Numeric:</strong> Pearson correlation</li>
+                <li><strong>Categorical vs Numeric:</strong> ANOVA</li>
+              </ul>
+            </p>
           </div>
         </div>
       </div>
@@ -232,11 +252,11 @@
           </div>
        </div>
        <div class="row">
-          <div class="col-md-6">
-            <div id="feature_importance" style="height:480px;"></div>
-          </div>
           <div class="col-md-6" id="prediction_confusion">
             <div id="confusion" style="height:480px;"></div>
+          </div>
+          <div class="col-md-6">
+            <div id="feature_importance" style="height:480px;"></div>
           </div>
        </div>
 
@@ -261,8 +281,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.15.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
-    <script src="{{ url_for('static', filename='ml.js', v='171121') }}"></script>
-    <script src="{{ url_for('static', filename='main.js', v='171121') }}"></script>
+    <script src="{{ url_for('static', filename='jstat.js') }}"></script>
+    <script src="{{ url_for('static', filename='ml.js', v='171210') }}"></script>
+    <script src="{{ url_for('static', filename='main.js', v='171210') }}"></script>
     <script>
 $(document).ready(function () {
   set_update('Downloading dataset...');

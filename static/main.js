@@ -33,6 +33,7 @@ var
       missing_row = 0;
       for (col in g['data']['data'][row]) { // 0..col
         if (g['data']['data'][row][col] == '') {
+          datatype[col] = 'categorical'; // TODO missing data is automatically categorical (for now)
           summary['columns'][col]['missing'] += 1;
           if (!g['excluded_cols'].has(parseInt(col))) { // only count if not excluded
             missing_row += 1;
@@ -292,7 +293,8 @@ var
           x: x,
           y: y,
           mode: 'markers',
-          type: 'scatter'
+          type: 'scatter',
+          opacity: 0.8
         }];
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
       }
@@ -385,6 +387,7 @@ var
     calculate_summary();
     show_missing();
     g['data_ok'] = false;
+    g['correlation_ok'] = false;
   }
 
   show_predictors = function() {
@@ -626,14 +629,14 @@ var
       value = g['data']['data'][i][feature_col];
       if (datatype == 'categorical') {
         if (!(value in traces)) {
-          traces[value] = {'x': [], 'y': [], name: value, mode: 'markers', type: 'scatter'};
+          traces[value] = {'x': [], 'y': [], name: value, mode: 'markers', type: 'scatter', opacity: 0.8};
         }
         traces[value]['x'].push(result['projection'][point][0]);
         traces[value]['y'].push(result['projection'][point][1]);
       }
       else {
         if (!('' in traces)) {
-          traces[''] = {'x': [], 'y': [], mode: 'markers', type: 'scatter', showscale: true, marker: {color: []}};
+          traces[''] = {'x': [], 'y': [], mode: 'markers', type: 'scatter', opacity: 0.8, showscale: true, marker: {color: []}};
         }
         traces['']['x'].push(result['projection'][point][0]);
         traces['']['y'].push(result['projection'][point][1]);
@@ -695,6 +698,208 @@ var
     }
   },
 
+  pearson_correlation = function(x, y) {
+    var ab = 0, a2 = 0, b2 = 0, xval, yval, 
+      xmean = g['summary']['columns'][x]['sum'] / g['summary']['columns'][x]['count'];
+      ymean = g['summary']['columns'][y]['sum'] / g['summary']['columns'][y]['count'];
+      n = g['data']['data'].length;
+    for (var row in g['data']['data']) {
+      xval = g['data']['data'][row][x];
+      yval= g['data']['data'][row][y];
+      ab += (xval - xmean) * (yval - ymean);
+      a2 += Math.pow(xval - xmean, 2);
+      b2 += Math.pow(yval - ymean, 2);
+    }
+    var r = ab / (Math.sqrt(a2) * Math.sqrt(b2)),
+      t = r * Math.sqrt(n-2) / Math.sqrt(1 - r * r),
+      p = jStat.ttest( t, n, 2);
+
+    return {
+      'r': r,
+      't': t,
+      'p': p
+    };
+  },
+
+  chi_square = function(x, y) {
+    var observed = {}, xc, yc, totalx = {}, totaly = {}, included = 0;
+    // calculate observed
+    for (var row in g['data']['data']) {
+      xc = g['data']['data'][row][x];
+      yc = g['data']['data'][row][y];
+      if (xc == '' || yc == '') {
+        continue;
+      }
+      if (!(xc in observed)) {
+        observed[xc] = {};
+      }
+      if (!(yc in observed[xc])) {
+        observed[xc][yc] = 0;
+      }
+      observed[xc][yc] += 1;
+      if (!(xc in totalx)) {
+        totalx[xc] = 0;
+      }
+      if (!(yc in totaly)) {
+        totaly[yc] = 0;
+      }
+      totalx[xc] += 1;
+      totaly[yc] += 1;
+      included += 1;
+    }
+
+    if (included == 0) {
+      return { 'error': 'No data'};
+    }
+
+    // compare to expected
+    var statistic = 0, expected, observe;
+    for (var xc in g['summary']['columns'][x]['distinct']) {
+      if (xc == '') {
+        continue;
+      }
+      for (var yc in g['summary']['columns'][y]['distinct']) {
+        if (yc == '') {
+          continue;
+        }
+        if (!(xc in totalx) || !(yc in totaly)) {
+          // can't calculate
+          return {'error': 'Insufficient data for ' + xc + ',' + yc}
+        }
+        expected = totalx[xc] * totaly[yc] / included;
+        if (expected < 5) {
+          // can't calculate
+          return {'error': 'Insufficient data for ' + xc + ',' + yc}
+        }
+        if (xc in observed && yc in observed[xc]) {
+          observe = observed[xc][yc];
+        }
+        else {
+          observe = 0;
+        }
+        statistic += Math.pow(observe - expected, 2) / expected;
+      }
+    }
+    var
+      df = (Object.keys(totalx).length - 1) * (Object.keys(totaly).length - 1),
+      p = 1 - jStat.chisquare.cdf(statistic, df);
+
+    return {
+      'r': statistic, 
+      'df': df,
+      'p': p
+    };
+  },
+
+  anova = function(cat, num) {
+    // build arrays of values
+    var vals = {};
+    for (var row in g['data']['data']) {
+      xc = g['data']['data'][row][cat];
+      yc = g['data']['data'][row][num];
+      if (xc == '' || yc == '') {
+        continue;
+      }
+      if (!(xc in vals)) {
+        vals[xc] = [];
+      }
+      vals[xc].push(parseFloat(yc));
+    }
+    var p = jStat.anovaftest.apply(null, Object.values(vals));
+    if (isNaN(p)) {
+      return {
+        'error': 'Failed to calculate ANOVA'
+      }
+    }
+    return {
+      'p': p
+    }
+  },
+
+  show_correlation = function() {
+    if (!g['correlation_ok']) {
+      Plotly.purge(document.getElementById("correlation"));
+      // calculate correlation
+      var xs = ys = g['data']['meta']['header'],
+        zs = [],
+        annotations = [],
+        statistic,
+        result, 
+        readable;
+      for (x in g['data']['meta']['header']) {
+        var current = [];
+        for (y in g['data']['meta']['header']) {
+          if (y == x) {
+            result = 0.0;
+            readable = '-';
+          }
+          else if (g['data']['meta']['datatype'][x] == 'categorical' && g['data']['meta']['datatype'][y] == 'categorical') {
+            // cat vs cat
+            statistic = chi_square(x, y);
+            if ('error' in statistic) {
+              result = 0.0;
+              readable = 'N/A';
+            }
+            else {
+              result = statistic['p'];
+              readable = Math.round(result * 100) / 100;
+            }
+          }
+          else if (g['data']['meta']['datatype'][x] != 'categorical' && g['data']['meta']['datatype'][y] != 'categorical') {
+            // num vs num
+            statistic = pearson_correlation(x, y);
+            if ('error' in statistic) {
+              result = 0.0;
+              readable = 'N/A';
+            }
+            else {
+              result = statistic['p'];
+              readable = Math.round(result * 100) / 100; // + ' (' + (Math.round(statistic['r'] * 10) / 10) + ')';
+            }
+          }
+          else {
+            // cat vs num
+            if (g['data']['meta']['datatype'][x] == 'categorical') {
+              statistic = anova(x, y);
+            }
+            else {
+              statistic = anova(y, x);
+            }
+            if ('error' in statistic) {
+              result = 0.0;
+              readable = 'N/A';
+            }
+            else {
+              result = statistic['p'];
+              readable = Math.round(result * 100) / 100;
+            }
+          }
+          current.push(result);
+          annotations.push({
+            xref: 'x1', yref: 'y1',
+            x: g['data']['meta']['header'][x], y: g['data']['meta']['header'][y],
+            text: readable,
+            font: { family: 'Arial', size: 12, color: 'rgb(50, 171, 96)' },
+            showarrow: false,
+            font: { color: 'white' }
+          });
+        }
+        zs.push(current);
+      }
+      var data = [{ x: xs, y: ys, z: zs, type: 'heatmap', showscale: true, colorscale: 'RdBu' }],
+      layout = {
+        title: 'Correlation between features (p-value)',
+        xaxis: { ticks: '', showgrid: true },
+        yaxis: { ticks: '', showgrid: true },
+        width: 130 + g['data']['meta']['header'].length * 44,
+        height: 130 + g['data']['meta']['header'].length * 44,
+        annotations: annotations
+      };
+      Plotly.newPlot('correlation', data, layout);
+      g['correlation_ok'] = true;
+    }
+  }
+
   run_queue = function() {
     if (g['queue'].length > 0) {
       g['queue'].shift()();
@@ -723,6 +928,7 @@ var
     g['has_predictions'] = false;
     g['displayModeBar'] = false;
     g['data_ok'] = false;
+    g['correlation_ok'] = false;
 
     calculate_all();
 
@@ -734,6 +940,9 @@ var
       var target = $(e.target).attr("href") // activated tab
       if (target == '#tab_data') {
         show_data();
+      }
+      else if (target == '#tab_correlation') {
+        show_correlation();
       }
     });
   };
