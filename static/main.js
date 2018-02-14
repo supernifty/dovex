@@ -202,11 +202,11 @@ var
            y: y,
            type: 'bar'
         } ];
-        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category'}, margin: { r: 0, pad: 0 } };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: 'category'}, yaxis: { title: 'Count' }, margin: { r: 0, pad: 0 } };
       }
       else { // numeric
         converted = [{ x: cols[col], type: 'histogram' }];
-        layout = { title: g['data']['meta']['header'][col], xaxis: {}, margin: { r: 0, pad: 0 } };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col]}, yaxis: { title: 'Count' }, margin: { r: 0, pad: 0 } };
       }
       target = $('#distributions').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="dist_' + col + '" style="width: ' + width + 'px"></div></div>');
       Plotly.purge(document.getElementById("dist_" + col));
