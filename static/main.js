@@ -940,7 +940,7 @@ var
     g['data'] = data;
     g['excluded_cols'] = new Set();
     g['has_predictions'] = false;
-    g['displayModeBar'] = true;
+    g['displayModeBar'] = false;
     g['data_ok'] = false;
     g['correlation_ok'] = false;
 
