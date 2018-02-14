@@ -219,6 +219,11 @@ var
     for (header in g['data']['meta']['header']) {
       $('#relationship_feature').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
     }
+    $('#relationship_label').empty();
+    $('#relationship_label').append($('<option>', {value:'', text:'(none)'}));
+    for (header in g['data']['meta']['header']) {
+      $('#relationship_label').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
+    }
   },
 
   show_relationships = function() {
@@ -228,6 +233,7 @@ var
     var 
       cols = numeric.transpose(g['data']['data']), 
       feature = $('#relationship_feature').val(),
+      label = $('#relationship_label').val(),
       converted, x, y, layout,
       width = Math.round(COLS_PER_GRAPH/12 * $('.container').width());
 
@@ -242,7 +248,7 @@ var
     // check not too many categories (plot.ly can't handle)
     distinct_count = Object.keys(g['summary']['columns'][feature]['distinct']).length;
     if (g['data']['meta']['datatype'][feature] == 'categorical' && distinct_count > MAX_CATEGORIES) {
-      $('#relationships').html('<div class="alert alert-danger fade in">This feature has too many categories (<strong>' + distinct_count + '</strong>)</div>');
+      $('#relationships').html('<div class="alert alert-danger fade in">This feature has too many categories (<strong>' + distinct_count + '</strong>&gt;' + MAX_CATEGORIES + ')</div>');
       return;
     }
 
@@ -285,18 +291,26 @@ var
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] != 'categorical') { // num vs num -> scatter
         x = []; 
         y = [];
+        z = [];
         for (row in g['data']['data']) {
           x.push(g['data']['data'][row][col])
           y.push(g['data']['data'][row][feature])
+          if (label != '') {
+            z.push(g['data']['data'][row][label]);
+          }
+          else {
+            z.push('');
+          }
         }
         converted = [{ 
           x: x,
           y: y,
+          text: z,
           mode: 'markers',
           type: 'scatter',
           opacity: 0.8
         }];
-        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' };
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') { // col-numeric (x) vs feature-cat (y)
         counts = {}
@@ -609,7 +623,7 @@ var
   reduction_result_callback = function(result) { 
     var traces = {}, 
         converted = [],
-        layout = { title: 'Projection'},
+        layout,
         datatype = g['data']['meta']['datatype'][$('#projection_outcome').val()],
         feature_col = $('#projection_outcome').val(),
         max_missing = parseInt($('#max_missing_projection').val()),
@@ -647,7 +661,7 @@ var
     for (var trace in traces) {
       converted.push(traces[trace]);
     }
-    layout = { title: 'Projection' };
+    layout = { title: 'Projection', hovermode: 'closest' };
     Plotly.plot("reduction", converted, layout);
     if ('features' in result) {
       projection_feature(result['features'], "projection_features", 1 );
@@ -926,13 +940,13 @@ var
     g['data'] = data;
     g['excluded_cols'] = new Set();
     g['has_predictions'] = false;
-    g['displayModeBar'] = false;
+    g['displayModeBar'] = true;
     g['data_ok'] = false;
     g['correlation_ok'] = false;
 
     calculate_all();
 
-    $('#relationship_feature').change(show_relationships);
+    $('#relationship_feature,#relationship_label').change(show_relationships);
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
     $('#run_reducer').click(show_reduction);
