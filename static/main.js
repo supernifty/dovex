@@ -3,7 +3,7 @@ var
 
   set_update = function(msg) {
     $('#summary').attr('class', 'alert alert-info');
-    $('#summary').html(msg); 
+    $('#summary').html(msg);
   },
 
   set_url = function(url) {
@@ -12,11 +12,11 @@ var
 
   set_error = function() {
     $('#summary').attr('class', 'alert alert-danger alert-dismissable');
-    $('#summary').html('Failed to load data.'); 
+    $('#summary').html('Failed to load data.');
   },
 
   calculate_summary = function() {
-    var summary = {'columns': {}, 'missing_row': []}, 
+    var summary = {'columns': {}, 'missing_row': []},
       datatype = [],
       missing_row;
 
@@ -44,8 +44,8 @@ var
             datatype[col] = 'categorical';
           }
           else {
-            summary['columns'][col]['min'] = Math.min(summary['columns'][col]['min'], g['data']['data'][row][col]); 
-            summary['columns'][col]['max'] = Math.max(summary['columns'][col]['max'], g['data']['data'][row][col]); 
+            summary['columns'][col]['min'] = Math.min(summary['columns'][col]['min'], g['data']['data'][row][col]);
+            summary['columns'][col]['max'] = Math.max(summary['columns'][col]['max'], g['data']['data'][row][col]);
             summary['columns'][col]['count'] += 1;
             summary['columns'][col]['sum'] += Number(g['data']['data'][row][col]);
           }
@@ -69,7 +69,7 @@ var
   },
 
   show_overview = function() {
-    set_update('Loaded <strong>' + g['data']['data'].length + '</strong> rows with <strong>' + g['data']['meta']['header'].length + '</strong> columns.'); 
+    set_update('Loaded <strong>' + g['data']['data'].length + '</strong> rows with <strong>' + g['data']['meta']['header'].length + '</strong> columns.');
   },
 
   show_columns = function() {
@@ -80,20 +80,20 @@ var
     for (column in g['data']['meta']['header']) { // 0..len
       if (g['data']['meta']['datatype'][column] != 'categorical' && g['summary']['columns'][column]['count'] > 0) {
         converted.push([
-          g['data']['meta']['header'][column], 
-          100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length, 
-          Object.keys(g['summary']['columns'][column]['distinct']).length, 
+          g['data']['meta']['header'][column],
+          100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length,
+          Object.keys(g['summary']['columns'][column]['distinct']).length,
           g['data']['meta']['datatype'][column],
-          g['summary']['columns'][column]['min'], 
-          g['summary']['columns'][column]['max'], 
+          g['summary']['columns'][column]['min'],
+          g['summary']['columns'][column]['max'],
           (g['summary']['columns'][column]['sum'] / g['summary']['columns'][column]['count']).toFixed(1)
         ]);
       }
       else {
         converted.push([
-          g['data']['meta']['header'][column], 
-          100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length, 
-          Object.keys(g['summary']['columns'][column]['distinct']).length, 
+          g['data']['meta']['header'][column],
+          100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length,
+          Object.keys(g['summary']['columns'][column]['distinct']).length,
           g['data']['meta']['datatype'][column],
           '',
           '',
@@ -135,10 +135,10 @@ var
   show_missing = function() {
     var
       layout = { title: '% Missing data for each column', xaxis: {}, barmode: 'stack' },
-      x = [], 
-      y_out = [], 
+      x = [],
+      y_out = [],
       y_in = [];
-    
+
     for (column in g['summary']['columns']) {
       if (g['excluded_cols'].has(parseInt(column))) {
         y_out.push(100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length);
@@ -169,23 +169,23 @@ var
     Plotly.plot("missing_by_column", converted, layout, {displayModeBar: g['displayModeBar']});
 
     // rows with missing data
-    layout = { 
+    layout = {
       title: 'Rows with missing data - excluding ' + g['excluded_cols'].size + ' column(s)',
       bargap: 0.05,
       xaxis: { title: 'Number of columns of missing data' },
       yaxis: { title: 'Number of rows' }
     };
     converted = [ { x: g['summary']['missing_row'], type: 'histogram' } ];
-    
+
     Plotly.purge(document.getElementById("missing_by_row"));
     Plotly.plot("missing_by_row", converted, layout, {displayModeBar: g['displayModeBar']});
   },
-  
+
   show_column_dists = function() {
     const
       COLS_PER_GRAPH = 6;
-    var 
-      cols = numeric.transpose(g['data']['data']), 
+    var
+      cols = numeric.transpose(g['data']['data']),
       converted, x, y, layout,
       width = Math.round(COLS_PER_GRAPH/12 * $('.container').width());
     $('#distributions').empty();
@@ -213,7 +213,7 @@ var
       Plotly.plot("dist_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
     }
   },
-  
+
   init_relationships = function() {
     $('#relationship_feature').empty();
     for (header in g['data']['meta']['header']) {
@@ -230,8 +230,8 @@ var
       const
       COLS_PER_GRAPH = 6,
       MAX_CATEGORIES = 100;
-    var 
-      cols = numeric.transpose(g['data']['data']), 
+    var
+      cols = numeric.transpose(g['data']['data']),
       feature = $('#relationship_feature').val(),
       label = $('#relationship_label').val(),
       converted, x, y, layout,
@@ -257,7 +257,7 @@ var
         continue;
       }
       // cat vs cat -> stacked bar
-      if (g['data']['meta']['datatype'][col] == 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') { 
+      if (g['data']['meta']['datatype'][col] == 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') {
         counts = {}
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
@@ -273,13 +273,13 @@ var
         // convert to traces - one trace per feature
         converted = [];
         for (current_feature_val in counts) {
-          x = []; 
+          x = [];
           y = [];
           for (current_x_val in counts[current_feature_val]) {
             x.push(current_x_val);
             y.push(counts[current_feature_val][current_x_val]);
           }
-          converted.push({ 
+          converted.push({
             x: x,
             y: y,
             name: current_feature_val,
@@ -289,7 +289,7 @@ var
         layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] != 'categorical') { // num vs num -> scatter
-        x = []; 
+        x = [];
         y = [];
         z = [];
         for (row in g['data']['data']) {
@@ -302,7 +302,7 @@ var
             z.push('');
           }
         }
-        converted = [{ 
+        converted = [{
           x: x,
           y: y,
           text: z,
@@ -355,7 +355,7 @@ var
         // convert to traces - one trace per feature
         converted = [];
         for (current_x_val in counts) {
-          converted.push({ 
+          converted.push({
             y: counts[current_x_val],
             name: current_x_val,
             type: 'box',
@@ -476,7 +476,7 @@ var
       } ];
 
       Plotly.plot(target, data, layout, {displayModeBar: g['displayModeBar']});
- 
+
   }
 
   prediction_result_callback = function(result) { // training_score, cross_validation_score, predictions) {
@@ -501,7 +501,7 @@ var
         // normalize
         var z = [];
         result['confusion'].forEach(function(el) {
-          var zr = [], 
+          var zr = [],
             total = math.sum(el);
           el.forEach(function(c) {
             zr.push((100 * c / total).toFixed(1) + '%');
@@ -542,7 +542,7 @@ var
     else { // numeric predictor
       $('#prediction_result').html(
         '<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (result['training_score'].toFixed(2)) + '<br/>' +
-        '<strong>Cross validation R<sup>2</sup>: </strong>' + (result['cross_validation_score'].toFixed(2)) + 
+        '<strong>Cross validation R<sup>2</sup>: </strong>' + (result['cross_validation_score'].toFixed(2)) +
         '<br/>Predictions have been added to the dataset as <strong>' + prediction_name + '</strong></div>');
     }
 
@@ -557,7 +557,7 @@ var
   },
 
   add_predictions_to_dataset = function(prediction_name, predictions) {
-    var cols = numeric.transpose(g['data']['data']), 
+    var cols = numeric.transpose(g['data']['data']),
       expanded_predictions = [],
       max_missing = parseInt($('#max_missing').val());
 
@@ -620,15 +620,15 @@ var
       Plotly.plot(target, converted, layout, {displayModeBar: g['displayModeBar']});
   },
 
-  reduction_result_callback = function(result) { 
-    var traces = {}, 
+  reduction_result_callback = function(result) {
+    var traces = {},
         converted = [],
         layout,
         datatype = g['data']['meta']['datatype'][$('#projection_outcome').val()],
         feature_col = $('#projection_outcome').val(),
         max_missing = parseInt($('#max_missing_projection').val()),
         point = 0;
-    
+
     if ('error' in result) {
       $('#reduction_result').html('<div class="alert alert-danger alert-dismissable">An error occurred: ' + result['error'] + '</div>')
       return;
@@ -656,7 +656,7 @@ var
         traces['']['y'].push(result['projection'][point][1]);
         traces['']['marker']['color'].push(value);
       }
-      point++; 
+      point++;
     }
     for (var trace in traces) {
       converted.push(traces[trace]);
@@ -697,10 +697,10 @@ var
           tableHeaders += "<th>" + val + "</th>";
         //}
       });
-       
+
       $("#table_data").empty();
       $("#table_data").append('<thead><tr>' + tableHeaders + '</tr></thead>');
-  
+
       $('#table_data').DataTable({
         "destroy": true,
         "order": [[ 0, "asc" ]],
@@ -713,7 +713,7 @@ var
   },
 
   pearson_correlation = function(x, y) {
-    var ab = 0, a2 = 0, b2 = 0, xval, yval, 
+    var ab = 0, a2 = 0, b2 = 0, xval, yval,
       xmean = g['summary']['columns'][x]['sum'] / g['summary']['columns'][x]['count'];
       ymean = g['summary']['columns'][y]['sum'] / g['summary']['columns'][y]['count'];
       n = g['data']['data'].length;
@@ -799,7 +799,7 @@ var
       p = 1 - jStat.chisquare.cdf(statistic, df);
 
     return {
-      'r': statistic, 
+      'r': statistic,
       'df': df,
       'p': p
     };
@@ -838,7 +838,7 @@ var
         zs = [],
         annotations = [],
         statistic,
-        result, 
+        result,
         readable;
       for (x in g['data']['meta']['header']) {
         var current = [];
