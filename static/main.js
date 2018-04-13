@@ -365,7 +365,11 @@ var
         layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }};
       }
       $('#relationships').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
-      Plotly.plot("corr_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
+      try {
+        Plotly.plot("corr_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
+      } catch (error) {
+        $('#corr_' + col).html('Error: ' + error);
+      }
     }
   },
 
