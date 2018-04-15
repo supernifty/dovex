@@ -1,9 +1,11 @@
 # Dovex
-A web based tool to quickly provide an interactive overview of your dataset.
+A web based tool to quickly provide an interactive overview and enable quick exploration of your dataset.
 
-Use to identify columns of interest, explore correlations between inputs, and problems in your input data.
+Use to identify columns of interest, explore correlations between inputs, and find problems in your input data.
 
-## Installation
+Try it out by visiting [dovex.org](http://dovex.org/).
+
+## Local Installation
 dovex has been tested on Python 3.
 
 ```
@@ -34,6 +36,8 @@ By default, the app stores uploaded datasets in the uploads directory. To persis
 ```
 docker run -p 5000:5000 -v /your/upload/directory:/app/uploads supernifty/dovex:latest
 ```
+
+Point your browser at http://127.0.0.1:5000/ to use the application.
 
 ## Data types
 Datatypes can be specified by starting the second line with '#'.
