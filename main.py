@@ -12,6 +12,7 @@ import uuid
 import flask
 
 import ml
+import util
 
 #import plotly.graph_objs as go
 #import pandas as pd
@@ -67,7 +68,8 @@ def json_data(filename):
         lines = 0
 
         with get_fh(filename) as data_fh:
-            for lines, row in enumerate(csv.reader(data_fh)):
+            delimiter = util.choose_delimiter(data_fh)
+            for lines, row in enumerate(csv.reader(data_fh, delimiter=delimiter)):
                 if lines == 0:
                     meta['header'] = row
                     continue
@@ -118,5 +120,5 @@ def show_help():
     return flask.render_template('help.html')
 
 if __name__ == '__main__':
-    #app.run(host='0.0.0.0')
-    app.run()
+    app.run(host='0.0.0.0')
+    #app.run()

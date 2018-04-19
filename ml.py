@@ -6,6 +6,7 @@
 import collections
 import csv
 import json
+import util
 
 import numpy as np
 
@@ -47,7 +48,8 @@ def preprocess(data_fh, config):
     seen = collections.defaultdict(dict)
     seen_count = collections.defaultdict(int)
 
-    for lines, row in enumerate(csv.reader(data_fh)):
+    delimiter = util.choose_delimiter(data_fh)
+    for lines, row in enumerate(csv.reader(data_fh, delimiter=delimiter)):
         if lines == 0:
             meta['header'] = row
             continue
