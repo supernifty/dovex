@@ -15,15 +15,13 @@ var
     $('#summary').html('Failed to load data.');
   },
 
+  // NB we now assume datatype will be provided in meta, and don't calculate it
   calculate_summary = function() {
     var summary = {'columns': {}, 'missing_row': []},
-      datatype = [],
       missing_row;
 
-    // assume numeric columns until told otherwise
     for (header in g['data']['meta']['header']) { // 0..len
       summary['columns'][header] = {'missing': 0, 'distinct': {}, 'min': 1e9, 'max': -1e9, 'count': 0, 'sum': 0};
-      datatype.push('numeric');
     }
 
     // populate summary - missing_row is a list of how many columns are missing for each row
@@ -33,7 +31,7 @@ var
       missing_row = 0;
       for (col in g['data']['data'][row]) { // 0..col
         if (g['data']['data'][row][col] == '') {
-          datatype[col] = 'categorical'; // TODO missing data is automatically categorical (for now)
+          //datatype[col] = 'categorical'; // TODO missing data is automatically categorical (for now)
           summary['columns'][col]['missing'] += 1;
           if (!g['excluded_cols'].has(parseInt(col))) { // only count if not excluded
             missing_row += 1;
@@ -41,7 +39,7 @@ var
         }
         else { // not missing
           if (!$.isNumeric(g['data']['data'][row][col])) {
-            datatype[col] = 'categorical';
+            //datatype[col] = 'categorical';
           }
           else {
             summary['columns'][col]['min'] = Math.min(summary['columns'][col]['min'], g['data']['data'][row][col]);
@@ -59,11 +57,6 @@ var
       g['max_missing'] = Math.max(g['max_missing'], missing_row);
     }
 
-    if ('datatype' in g['data']['meta']) {
-      datatype = g['data']['meta']['datatype'];
-    }
-
-    g['data']['meta']['datatype'] = datatype; // overwrite with calculated datatypes
     g['summary'] = summary;
     show_max_missing();
   },
