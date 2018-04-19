@@ -16,6 +16,7 @@ from pandas.core.dtypes.common import _get_dtype_from_object
 import flask
 
 import ml
+import util
 
 #import plotly.graph_objs as go
 #import pandas as pd
@@ -131,7 +132,7 @@ def json_data(filename):
         datatype_row = None
 
         with get_fh(filename) as data_fh:
-            df = pd.read_csv(data_fh, header=0)
+            df = pd.read_csv(data_fh, header=0, sep=util.choose_delimiter(data_fh))
 
         if str(df.iloc[0,0])[0]=='#':
             datatype_row = df.iloc[0,:]
@@ -196,5 +197,5 @@ def show_help():
     return flask.render_template('help.html')
 
 if __name__ == '__main__':
-    #app.run(host='0.0.0.0')
-    app.run()
+    app.run(host='0.0.0.0')
+    #app.run()

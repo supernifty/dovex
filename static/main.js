@@ -306,7 +306,17 @@ var
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' };
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') { // col-numeric (x) vs feature-cat (y)
-        counts = {}
+        counts = {};
+        max_feature_val = g['summary']['columns'][col]['max'];
+        // plot.ly doesn't like large values, so scale, based on max
+        scale = '';
+        scale_factor = 0;
+
+        while (max_feature_val / Math.pow(10, scale_factor) > 100) { // need to scale
+          scale_factor += 1;
+          scale = ' (&times;10<sup>' + scale_factor + '</sup>)';
+        }
+
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
           x_val = g['data']['data'][row][col];
@@ -314,9 +324,10 @@ var
             counts[feature_val] = [];
           }
           if ($.isNumeric(x_val)) { // plot.ly doesn't like empty values
-            counts[feature_val].push(x_val);
+            counts[feature_val].push(x_val / Math.pow(10, scale_factor));
           }
         }
+
         // convert to traces - one trace per feature
         converted = [];
         for (current_feature_val in counts) {
@@ -328,7 +339,7 @@ var
             });
           }
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: {}, margin: { r: 0, pad: 0 }, barmode: 'stack', yaxis: { title: 'Count' }};
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] + scale }, margin: { r: 0, pad: 0 }, barmode: 'stack', yaxis: { title: 'Count' }};
       }
       else { // cat (x) vs num (y)
         col_distinct_count = Object.keys(g['summary']['columns'][col]['distinct']).length;
@@ -358,7 +369,11 @@ var
         layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }};
       }
       $('#relationships').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
-      Plotly.plot("corr_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
+      try {
+        Plotly.plot("corr_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
+      } catch (error) {
+        $('#corr_' + col).html('Error: ' + error);
+      }
     }
   },
 
