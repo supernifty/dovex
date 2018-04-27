@@ -190,6 +190,9 @@ var
       width = Math.round(COLS_PER_GRAPH/12 * $('.container').width());
     $('#distributions').empty();
     for (var col in g['data']['meta']['header']) { // 0.. cols
+      if (g['excluded_cols'].has(parseInt(col))) {
+        continue;
+      }
       x = [];
       y = [];
       if (g['data']['meta']['datatype'][col] == 'categorical') {
@@ -217,6 +220,9 @@ var
   init_relationships = function() {
     $('#relationship_feature').empty();
     for (header in g['data']['meta']['header']) {
+      if (g['excluded_cols'].has(parseInt(header))) {
+        continue;
+      }
       $('#relationship_feature').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
     }
     $('#relationship_label').empty();
@@ -254,6 +260,9 @@ var
 
     for (var col in g['data']['meta']['header']) { // 0.. cols
       if (col == feature) {
+        continue;
+      }
+      if (g['excluded_cols'].has(parseInt(col))) {
         continue;
       }
       // cat vs cat -> stacked bar
@@ -400,6 +409,7 @@ var
     update_excluded();
   },
 
+  /* change in excluded columns */
   update_excluded = function() {
     var excluded_list = [];
     for (header in g['data']['meta']['header']) {
@@ -415,6 +425,8 @@ var
     }
     calculate_summary();
     show_missing();
+    show_column_dists();
+    g['relationships_ok'] = false;
     g['data_ok'] = false;
     g['correlation_ok'] = false;
   }
@@ -849,15 +861,23 @@ var
     if (!g['correlation_ok']) {
       Plotly.purge(document.getElementById("correlation"));
       // calculate correlation
-      var xs = ys = g['data']['meta']['header'],
+      var xs = [],
         zs = [],
         annotations = [],
+        xpos = 0, ypos = 0,
         statistic,
         result, 
         readable;
       for (x in g['data']['meta']['header']) {
+        if (g['excluded_cols'].has(parseInt(x))) {
+          continue;
+        }
+        xs.push(g['data']['meta']['header'][x]);
         var current = [];
         for (y in g['data']['meta']['header']) {
+          if (g['excluded_cols'].has(parseInt(y))) {
+            continue;
+          }
           if (y == x) {
             result = 0.0;
             readable = '-';
@@ -906,7 +926,8 @@ var
           current.push(result);
           annotations.push({
             xref: 'x1', yref: 'y1',
-            x: g['data']['meta']['header'][x], y: g['data']['meta']['header'][y],
+            x: g['data']['meta']['header'][x], 
+            y: g['data']['meta']['header'][y],
             text: readable,
             font: { family: 'Arial', size: 12, color: 'rgb(50, 171, 96)' },
             showarrow: false,
@@ -915,7 +936,7 @@ var
         }
         zs.push(current);
       }
-      var data = [{ x: xs, y: ys, z: zs, type: 'heatmap', showscale: true, colorscale: 'RdBu' }],
+      var data = [{ x: xs, y: xs, z: zs, type: 'heatmap', showscale: true, colorscale: 'RdBu' }],
       layout = {
         title: 'Correlation between features (p-value)',
         xaxis: { ticks: '', showgrid: true },
@@ -927,7 +948,15 @@ var
       Plotly.newPlot('correlation', data, layout);
       g['correlation_ok'] = true;
     }
-  }
+  },
+
+  update_relationships = function() {
+    if (!g['relationships_ok']) {
+      init_relationships();
+      show_relationships();
+      g['relationships_ok'] = true;
+    }
+  },
 
   run_queue = function() {
     if (g['queue'].length > 0) {
@@ -943,8 +972,7 @@ var
       show_columns,
       show_missing,
       show_column_dists,
-      init_relationships,
-      show_relationships,
+      update_relationships, // optional
       init_prediction
     ];
 
@@ -957,6 +985,7 @@ var
     g['has_predictions'] = false;
     g['displayModeBar'] = false;
     g['data_ok'] = false;
+    g['relationships_ok'] = false;
     g['correlation_ok'] = false;
 
     calculate_all();
@@ -972,6 +1001,9 @@ var
       }
       else if (target == '#tab_correlation') {
         show_correlation();
+      }
+      else if (target == '#tab_relationship') {
+        update_relationships();
       }
     });
   };
