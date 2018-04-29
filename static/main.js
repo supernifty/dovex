@@ -973,7 +973,8 @@ var
       show_missing,
       show_column_dists,
       update_relationships, // optional
-      init_prediction
+      init_prediction,
+      save_recent
     ];
 
     run_queue();
@@ -1006,4 +1007,49 @@ var
         update_relationships();
       }
     });
+  },
+
+  save_recent = function() {
+    var val = window.sessionStorage.getItem("recent");
+    if (val == null) {
+      val = [];
+    }
+    else {
+      val = JSON.parse(val);
+    }
+
+    // remove existing
+    var idx = val.length;
+    while (idx--) {
+      if (val[idx].url == window.location.href) { 
+        val.splice(idx, 1);
+      }
+    }
+
+    val.unshift({'url': window.location.href, 'columns': max_length(g.data.meta.header.join(', '), 120)})
+    val = val.slice(0, 10);
+    window.sessionStorage.setItem('recent', JSON.stringify(val));
+  },
+
+  max_length = function(s, l) {
+    if (s.length > l) {
+      return s.substr(0, l) + '...';
+    }
+    else {
+      return s
+    }
+  },
+
+  // upload page functionality
+  populate_recent = function () {
+    var li = '', val = window.sessionStorage.getItem("recent");
+    if (val != null) {
+      val = JSON.parse(val);
+      if (val.length > 0) {
+        for (item in val) {
+          li += '<li><a href="' + val[item].url + '">' + val[item].columns + '</a>';
+        }
+        $('#recent').html('<strong>Recently Viewed Datasets</strong><ul>' + li + '</ul>');
+      }
+    }
   };
