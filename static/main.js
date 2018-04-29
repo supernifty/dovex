@@ -1010,7 +1010,7 @@ var
   },
 
   save_recent = function() {
-    var val = window.sessionStorage.getItem("recent");
+    var val = window.localStorage.getItem("recent");
     if (val == null) {
       val = [];
     }
@@ -1028,7 +1028,7 @@ var
 
     val.unshift({'url': window.location.href, 'columns': max_length(g.data.meta.header.join(', '), 120)})
     val = val.slice(0, 10);
-    window.sessionStorage.setItem('recent', JSON.stringify(val));
+    window.localStorage.setItem('recent', JSON.stringify(val));
   },
 
   max_length = function(s, l) {
@@ -1042,7 +1042,7 @@ var
 
   // upload page functionality
   populate_recent = function () {
-    var li = '', val = window.sessionStorage.getItem("recent");
+    var li = '', val = window.localStorage.getItem("recent");
     if (val != null) {
       val = JSON.parse(val);
       if (val.length > 0) {
