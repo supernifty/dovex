@@ -144,7 +144,6 @@ def json_data(filename):
         meta['header'] = list(df.columns)
         meta['lines'] = len(df)
 
-        #df = pd.DataFrame.from_records(data, columns=meta['header'])
         meta['datatype'] = list(guess_datatypes(df, known_datatypes=datatype_row))
         # TODO: if desired, set variables with missing values to categorical
 
@@ -159,7 +158,9 @@ def json_data(filename):
                     new_fields.append(newfield)
             meta['header'] += new_fields
             meta['datatype'] += ['categorical']*len(new_fields)
-            data = [list(record) for record in df[meta['header']].astype(str).to_records(index=False)]
+
+        data = [list(record) for record in df[meta['header']].astype(str).to_records(index=False)]
+
         return flask.jsonify(meta=meta, data=data)
     except FileNotFoundError:
         flask.abort(404)
