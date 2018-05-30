@@ -159,7 +159,9 @@ def json_data(filename):
             meta['header'] += new_fields
             meta['datatype'] += ['categorical']*len(new_fields)
 
-        data = [list(record) for record in df[meta['header']].astype(str).to_records(index=False)]
+        df_str = df[meta['header']].astype(str)
+        df_str[df.isnull()] = ''
+        data = [list(record) for record in df_str.to_records(index=False)]
 
         return flask.jsonify(meta=meta, data=data)
     except FileNotFoundError:
