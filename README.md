@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/supernifty/dovex.svg?branch=master)](https://travis-ci.org/supernifty/dovex)
+
 # Dovex
 A web based tool to quickly provide an interactive overview and enable quick exploration of your dataset.
 
