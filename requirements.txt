@@ -1,4 +1,5 @@
 Flask
 numpy
+pandas
 scipy
 sklearn
