@@ -8,6 +8,10 @@ import os
 import re
 import urllib
 import uuid
+import argparse
+import pandas as pd
+import numpy as np
+from pandas.core.dtypes.common import _get_dtype_from_object
 
 import flask
 
@@ -16,6 +20,12 @@ import util
 
 #import plotly.graph_objs as go
 #import pandas as pd
+
+# arguments are currently used only to make missingness optional
+parser = argparse.ArgumentParser()
+parser.add_argument('--missingness', dest='missingness', action='store_true',
+                    help='create extra variables corresponding to missingness of variables')
+args = parser.parse_args()
 
 app = flask.Flask(__name__, template_folder='templates')
 app.config.from_pyfile('config.py')
@@ -57,32 +67,102 @@ def get_fh(filename):
             raise FileNotFoundError
         return open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+def matches_dtypes(df, dtypes):
+    """
+    Return Series that is True where dtype of column matches given dtypes.
+    Returns a Series with index matching df.columns.
+    dtypes must be an iterable of type specifications.
+    Copies match logic from pandas.DataFrame.select_dtypes();
+    use same type specifications:
+    * To select all *numeric* types use the numpy dtype ``numpy.number``
+    * To select strings you must use the ``object`` dtype, but note that
+      this will return *all* object dtype columns
+    * See the `numpy dtype hierarchy
+      <http://docs.scipy.org/doc/numpy/reference/arrays.scalars.html>`__
+    * To select datetimes, use np.datetime64, 'datetime' or 'datetime64'
+    * To select timedeltas, use np.timedelta64, 'timedelta' or
+      'timedelta64'
+    * To select Pandas categorical dtypes, use 'category'
+    * To select Pandas datetimetz dtypes, use 'datetimetz' (new in 0.20.0),
+      or a 'datetime64[ns, tz]' string
+    """
+    dtypes = list(map(_get_dtype_from_object, dtypes))
+    boolean_list = [any([issubclass(coltype.type,t) for t in dtypes])
+                     for (column,coltype) in df.dtypes.iteritems()]
+    return pd.Series(boolean_list, index=df.columns)
+
+# Guess unknown datatypes
+# For now, if it's not numeric, it's categorical
+# For now, just use pandas' guess at dtype
+def guess_datatypes(df, known_datatypes=None):
+    """
+    Where known_datatypes is '', fill in with guessed datatypes.
+    Return Series of resulting datatypes.
+    Will be identical to known_datatypes if all datatypes were specified.
+    """
+    ALLOWED_VALUES = {'categorical','numeric',''}
+    if known_datatypes is None:
+        known_datatypes = ['']*df.shape[1]
+    if len(set(known_datatypes) - ALLOWED_VALUES) > 0:
+        raise ValueError("Unrecognised datatypes: {}".format(set(known_datatypes) - ALLOWED_VALUES))
+
+    datatypes = pd.Series(known_datatypes, index=df.columns)
+    unknown = [t=='' for t in known_datatypes]
+    looks_numeric = matches_dtypes(df, [np.number])
+    # for now either numeric or categorical
+    looks_categorical = ~looks_numeric
+    datatypes[unknown & looks_numeric] = 'numeric'
+    datatypes[unknown & looks_categorical] = 'categorical'
+    return datatypes
+
+
 @app.route('/data/<filename>')
 def json_data(filename):
     '''
-        provide data as json
+        Read in the data file from disk, parse, provide data as json.
+        Calculate datatypes where not provided.
+        Currently allowed datatypes are: numeric, categorical.
+        Optionally, based on args.missingness,
+        add variables to represent missingness of original variables.
     '''
     try:
         meta = {}
         data = []
         lines = 0
+        datatype_row = None
 
         with get_fh(filename) as data_fh:
-            delimiter = util.choose_delimiter(data_fh)
-            for lines, row in enumerate(csv.reader(data_fh, delimiter=delimiter)):
-                if lines == 0:
-                    meta['header'] = row
-                    continue
-                if len(row) == 0: # skip empty lines
-                    continue
-                if row[0].startswith('#'):
-                    if lines == 1:
-                        meta['datatype'] = row
-                        meta['datatype'][0] = row[0][1:] # remove leading #
-                    continue
-                data.append(row)
+            df = pd.read_csv(data_fh, header=0, sep=util.choose_delimiter(data_fh))
 
-        meta['lines'] = lines
+        if str(df.iloc[0,0])[0]=='#':
+            datatype_row = df.iloc[0,:]
+            datatype_row[0] = datatype_row[0][1:]
+            df = df.iloc[1:,:]
+        else:
+            datatype_row = None
+
+        meta['header'] = list(df.columns)
+        meta['lines'] = len(df)
+
+        meta['datatype'] = list(guess_datatypes(df, known_datatypes=datatype_row))
+        # TODO: if desired, set variables with missing values to categorical
+
+        if args.missingness:
+            # Create a missingness variable for every variable that has missing data.
+            new_fields = []
+            for field in meta['header']:
+                if df[field].isnull().sum() > 0:
+                    newfield = "missing_"+field
+                    print("{} has missing values, creating {}".format(field,newfield))
+                    df[newfield] = df[field].isnull()
+                    new_fields.append(newfield)
+            meta['header'] += new_fields
+            meta['datatype'] += ['categorical']*len(new_fields)
+
+        df_str = df[meta['header']].astype(str)
+        df_str[df.isnull()] = ''
+        data = [list(record) for record in df_str.to_records(index=False)]
+
         return flask.jsonify(meta=meta, data=data)
     except FileNotFoundError:
         flask.abort(404)
