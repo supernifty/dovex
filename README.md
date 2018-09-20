@@ -45,6 +45,8 @@ Point your browser at http://127.0.0.1:5000/ to use the application.
 Datatypes can be specified by starting the second line with '#'.
 Possible datatypes are: categorical, ordinal, numeric.
 
+**ordinal is currently unimplemented**
+
 Without specifying data types, the software will attempt to infer the datatype of each column.
 
 ## Provided functionality

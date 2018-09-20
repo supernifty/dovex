@@ -455,6 +455,13 @@ var
     if (old_mmp != null) {
       $('#max_missing_projection').val(old_mmp);
     }
+    // make sure both values set
+    if ($('#max_missing').val() == '') {
+      $('#max_missing').val(g['max_missing'] + 1);
+    }
+    if ($('#max_missing_projection').val() == '') {
+      $('#max_missing_projection').val(g['max_missing'] + 1);
+    }
   }
 
   show_prediction = function() {
@@ -502,12 +509,21 @@ var
   prediction_result_callback = function(result) { // training_score, cross_validation_score, predictions) {
     var predictor = ml[$('#predictor').val()](),
       outcome_datatype = g['data']['meta']['datatype'][$('#outcome').val()],
-      prediction_name = g['data']['meta']['header'][$('#outcome').val()] + ' - PREDICTIONS';
+      prediction_name = g['data']['meta']['header'][$('#outcome').val()] + ' - PREDICTIONS',
+      notes = '';
     Plotly.purge(document.getElementById('confusion'));
     Plotly.purge(document.getElementById('feature_importance'));
     if ('error' in result) { // problem
       $('#prediction_result').html('<div class="alert alert-danger alert-dismissable">Error: ' + result['error'] + '</div>');
       return;
+    }
+
+    if ('notes' in result && result['notes'].length > 0) {
+      notes = '<ul>';
+      for (item in result['notes']) {
+        notes += '<li>' + result['notes'][item] + '</li>';
+      }
+      notes += '</ul>';
     }
     if (outcome_datatype == 'categorical') { // categorical predictor
       $('#prediction_result').html(
@@ -515,7 +531,7 @@ var
         '<strong>Training samples: </strong>' + result['predictions'].length + '<br/>' +
         '<strong>Training accuracy: </strong>' + ((result['training_score'] * 100).toFixed(1)) + '%<br/>' +
         '<strong>Cross validation accuracy: </strong>' + ((result['cross_validation_score'] * 100).toFixed(1)) + '%<br/>' +
-        '<br/>Predictions have been added to the dataset as <strong>' + prediction_name + '</strong></div>');
+        '<br/>Predictions have been added to the dataset as <strong>' + prediction_name + '</strong>' + notes + '</div>');
       // confusion matrix
       if ('confusion' in result) {
         // normalize
@@ -563,7 +579,7 @@ var
       $('#prediction_result').html(
         '<div class="alert alert-info alert-dismissable"><strong>Training R<sup>2</sup>: </strong>' + (result['training_score'].toFixed(2)) + '<br/>' +
         '<strong>Cross validation R<sup>2</sup>: </strong>' + (result['cross_validation_score'].toFixed(2)) +
-        '<br/>Predictions have been added to the dataset as <strong>' + prediction_name + '</strong></div>');
+        '<br/>Predictions have been added to the dataset as <strong>' + prediction_name + '</strong>' + notes + '</div>');
     }
 
     if ('features' in result) {
@@ -647,7 +663,8 @@ var
         datatype = g['data']['meta']['datatype'][$('#projection_outcome').val()],
         feature_col = $('#projection_outcome').val(),
         max_missing = parseInt($('#max_missing_projection').val()),
-        point = 0;
+        point = 0,
+        notes = '';
 
     if ('error' in result) {
       $('#reduction_result').html('<div class="alert alert-danger alert-dismissable">An error occurred: ' + result['error'] + '</div>')
@@ -687,7 +704,14 @@ var
       projection_feature(result['features'], "projection_features", 1 );
       projection_feature(result['features_2'], "projection_features_2", 2 );
     }
-    $('#reduction_result').html('<div class="alert alert-info">' + point + ' data points transformed.</div>')
+    if ('notes' in result && result['notes'].length > 0) {
+      notes = '<ul>';
+      for (item in result['notes']) {
+        notes += '<li>' + result['notes'][item] + '</li>';
+      }
+      notes += '</ul>';
+    }
+    $('#reduction_result').html('<div class="alert alert-info">' + point + ' data points transformed.' + notes + '</div>')
   },
 
   reduction_result_callback_error = function() {

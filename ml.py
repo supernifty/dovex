@@ -14,6 +14,7 @@ import sklearn.ensemble
 import sklearn.decomposition
 import sklearn.linear_model
 import sklearn.manifold
+import sklearn.preprocessing
 import sklearn.svm
 import sklearn.model_selection
 
@@ -49,6 +50,7 @@ def preprocess(data_fh, config):
     seen_count = collections.defaultdict(int)
 
     delimiter = util.choose_delimiter(data_fh)
+    impute_numeric = False
     for lines, row in enumerate(csv.reader(data_fh, delimiter=delimiter)):
         if lines == 0:
             meta['header'] = row
@@ -76,8 +78,10 @@ def preprocess(data_fh, config):
                         seen[idx][cell] = seen_count[idx]
                         seen_count[idx] += 1
                     x.extend(chunk)
-                elif cell == '': # don't handle missing float
-                    return {'error': 'Cannot train with missing data in numeric column {} on line {}.'.format(idx + 1, lines + 1)}
+                elif cell == '': # handle missing float
+                    #return {'error': 'Cannot train with missing data in numeric column {} on line {}.'.format(idx + 1, lines + 1)}
+                    x.append(np.nan)
+                    impute_numeric = True
                 else:
                     x.append(float(cell))
 
@@ -91,14 +95,24 @@ def preprocess(data_fh, config):
             X.append(x)
 
     # check limits
+    if len(X) == 0:
+        return {'error': 'No rows to analyze. Is there too much missing data?'}
+
     if len(X) * len(X[0]) > MAX_CELLS:
         return {'error': 'This dataset is too large ({} cells vs {} max). Reduce the number of rows or columns.'.format(len(X) * len(X[0]), MAX_CELLS)}
+
+    # impute
+    notes = []
+    if impute_numeric:
+        imputer = sklearn.preprocessing.Imputer(missing_values=np.nan, strategy='mean', copy=False)
+        X = imputer.fit_transform(X)
+        notes.append('Missing numeric data has been imputed with the mean of that column')
 
     # scale
     if 'scale' in config:
         X = sklearn.preprocessing.scale(X)
 
-    return {'X': X, 'y_labels': y_labels, 'y': y, 'y_predict': y_predict, 'y_exclude': y_exclude, 'categorical_cols': categorical_cols, 'distinct': distinct}
+    return {'X': X, 'y_labels': y_labels, 'y': y, 'y_predict': y_predict, 'y_exclude': y_exclude, 'categorical_cols': categorical_cols, 'distinct': distinct, 'notes': notes}
 
 def evaluate(data_fh, config, learner, learner_features=None):
     '''
@@ -113,7 +127,8 @@ def evaluate(data_fh, config, learner, learner_features=None):
 
     result = {
         'predictions': predictions.tolist(),
-        'training_score': learner.score(pre['X'], pre['y'])
+        'training_score': learner.score(pre['X'], pre['y']),
+        'notes': pre['notes']
     }
 
     if pre['y_predict'] in pre['categorical_cols']: # use accuracy
@@ -149,11 +164,13 @@ def project(data_fh, config, projector, has_features=True, max_rows=None):
         result = {
             'projection': projection.tolist(),
             'features': map_to_original_features(projection_features(projector), pre['y_exclude'], pre['y_predict'], pre['distinct'], pre['categorical_cols']),
-            'features_2': map_to_original_features(projection_features(projector, component=1), pre['y_exclude'], pre['y_predict'], pre['distinct'], pre['categorical_cols'])
+            'features_2': map_to_original_features(projection_features(projector, component=1), pre['y_exclude'], pre['y_predict'], pre['distinct'], pre['categorical_cols']),
+            'notes': pre['notes']
         }
     else:
         result = {
-            'projection': projection.tolist()
+            'projection': projection.tolist(),
+            'notes': pre['notes']
         }
     return result
 
