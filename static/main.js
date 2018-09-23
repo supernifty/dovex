@@ -180,7 +180,8 @@ var
     var
       cols = numeric.transpose(g['data']['data']),
       converted, x, y, layout,
-      width = Math.round(COLS_PER_GRAPH/12 * $('.container').width());
+      width = Math.round(COLS_PER_GRAPH/12 * $('.container').width()),
+      exclude_missing = $('#distribution_missing').prop('checked');
     $('#distributions').empty();
     for (var col in g['data']['meta']['header']) { // 0.. cols
       if (g['excluded_cols'].has(parseInt(col))) {
@@ -190,6 +191,9 @@ var
       y = [];
       if (g['data']['meta']['datatype'][col] == 'categorical') {
         for (distinct in g['summary']['columns'][col]['distinct']) {
+           if (exclude_missing && (distinct == '' || g['summary']['columns'][col]['distinct'][distinct] == '')) {
+             continue;
+           }
            x.push(distinct);
            y.push(g['summary']['columns'][col]['distinct'][distinct]);
         }
@@ -234,7 +238,8 @@ var
       feature = $('#relationship_feature').val(),
       label = $('#relationship_label').val(),
       converted, x, y, layout,
-      width = Math.round(COLS_PER_GRAPH/12 * $('.container').width());
+      width = Math.round(COLS_PER_GRAPH/12 * $('.container').width()),
+      exclude_missing = $('#relationship_missing').prop('checked');
 
     // clear existing plots if any
     $('#relationships div div').each(function () {
@@ -264,6 +269,11 @@ var
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
           x_val = g['data']['data'][row][col];
+
+          if (exclude_missing && (feature_val == '' || x_val == '')) {
+            continue;
+          }
+
           if (!(feature_val in counts)) {
             counts[feature_val] = {}
           }
@@ -297,6 +307,7 @@ var
         for (row in g['data']['data']) {
           x.push(g['data']['data'][row][col])
           y.push(g['data']['data'][row][feature])
+          // selected column as label
           if (label != '') {
             z.push(g['data']['data'][row][label]);
           }
@@ -329,6 +340,11 @@ var
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
           x_val = g['data']['data'][row][col];
+
+          if (exclude_missing && (feature_val == '' || x_val == '')) {
+            continue;
+          }
+
           if (!(feature_val in counts)) {
             counts[feature_val] = [];
           }
@@ -360,6 +376,11 @@ var
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
           x_val = g['data']['data'][row][col];
+
+          if (exclude_missing && (feature_val == '' || x_val == '')) {
+            continue;
+          }
+
           if (!(x_val in counts)) {
             counts[x_val] = []
           }
@@ -1008,7 +1029,8 @@ var
 
     calculate_all();
 
-    $('#relationship_feature,#relationship_label').change(show_relationships);
+    $('#distribution_missing').change(show_column_dists);
+    $('#relationship_feature,#relationship_label,#relationship_missing').change(show_relationships);
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
     $('#run_reducer').click(show_reduction);
