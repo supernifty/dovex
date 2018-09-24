@@ -50,7 +50,7 @@ def preprocess(data_fh, config):
     seen_count = collections.defaultdict(int)
 
     delimiter = util.choose_delimiter(data_fh)
-    impute_numeric = False
+    impute_numeric = 0
     for lines, row in enumerate(csv.reader(data_fh, delimiter=delimiter)):
         if lines == 0:
             meta['header'] = row
@@ -69,7 +69,7 @@ def preprocess(data_fh, config):
                     missing += 1
                     if missing >= x_exclude:
                         break # skip
-                if idx in categorical_cols:
+                if idx in categorical_cols: # categorical
                     chunk = [0] * distinct[idx]
                     if cell in seen[idx]:
                         chunk[seen[idx][cell]] = 1
@@ -81,9 +81,13 @@ def preprocess(data_fh, config):
                 elif cell == '': # handle missing float
                     #return {'error': 'Cannot train with missing data in numeric column {} on line {}.'.format(idx + 1, lines + 1)}
                     x.append(np.nan)
-                    impute_numeric = True
+                    impute_numeric += 1
                 else:
-                    x.append(float(cell))
+                    try:
+                        x.append(float(cell))
+                    except ValueError:
+                        x.append(np.nan)
+                        impute_numeric += 1
 
         if missing < x_exclude: # sufficient number of populated columns
             if y_predict is not None:
@@ -103,10 +107,10 @@ def preprocess(data_fh, config):
 
     # impute
     notes = []
-    if impute_numeric:
+    if impute_numeric > 0:
         imputer = sklearn.preprocessing.Imputer(missing_values=np.nan, strategy='mean', copy=False)
         X = imputer.fit_transform(X)
-        notes.append('Missing numeric data has been imputed with the mean of that column')
+        notes.append('{} missing or erroneous numeric value(s) have been imputed with the mean of that column'.format(impute_numeric))
 
     # scale
     if 'scale' in config:
