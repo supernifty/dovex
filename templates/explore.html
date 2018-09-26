@@ -110,11 +110,22 @@
       <!--  inputs -->
       <div class="tab-pane" id="tab_inputs">
        <div class="row">
-         <div class="col-md-6">
-           <input class="form-check-input" type="checkbox" value="" id="distribution_missing">
-           <label class="form-check-label" for="distribution_missing">
-             Exclude missing data
-           </label>
+         <div class="col-md-12">
+           <details>
+           <summary>Settings</summary>
+             <input class="form-check-input" type="checkbox" value="" id="distribution_missing">
+             <label class="form-check-label" for="distribution_missing">
+               Exclude missing data
+             </label>
+            <div class="dropdown">
+              <button class="btn btn-default dropdown-toggle" type="button" id="distribution_log" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                Toggle log scale for axis
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" id="distribution_log_ul" aria-labelledby="distribution_log">
+              </ul>
+            </div>
+           </details>
          </div>
        </div>
 
@@ -138,12 +149,25 @@
           </div>
        </div>
 
+       <div class="row">&nbsp;</div>
+
        <div class="row">
-         <div class="col-md-6">
-           <input class="form-check-input" type="checkbox" value="" id="relationship_missing">
-           <label class="form-check-label" for="relationship_missing">
-             Exclude missing data
-           </label>
+         <div class="col-md-12">
+           <details>
+           <summary>More Settings</summary>
+             <input class="form-check-input" type="checkbox" value="" id="relationship_missing">
+             <label class="form-check-label" for="relationship_missing">
+               Exclude missing data
+             </label>
+            <div class="dropdown">
+              <button class="btn btn-default dropdown-toggle" type="button" id="relationships_log" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                Toggle log scale for axis
+                <span class="caret"></span>
+              </button>
+              <ul id="relationships_log_ul" class="dropdown-menu" aria-labelledby="relationships_log">
+              </ul>
+            </div>
+            </details>
          </div>
        </div>
 

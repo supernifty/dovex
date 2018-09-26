@@ -174,6 +174,41 @@ var
     Plotly.plot("missing_by_row", converted, layout, {displayModeBar: g['displayModeBar']});
   },
 
+  graph_axis = function(tab, col, axis) {
+    var
+      key = tab + '_' + col + '_' + axis;
+    if (g['graph_axis_style'].has(key)) {
+      return 'log';
+    }
+    else {
+      return '-';
+    }
+  }
+
+  update_rel_graph = function(ev) {
+    var target = "" + ev.target.id,
+      key = 'rel_' + target.split('_')[1] + '_' + target.split('_')[2];
+    if (g['graph_axis_style'].has(key)) {
+      g['graph_axis_style'].delete(key);
+    }
+    else {
+      g['graph_axis_style'].add(key);
+    }
+    show_relationships();
+  }
+
+  update_dist_graph = function(ev) {
+    var target = "" + ev.target.id,
+      key = 'dist_' + target.split('_', 2)[1] + '_' + target.split('_')[2];
+    if (g['graph_axis_style'].has(key)) {
+      g['graph_axis_style'].delete(key);
+    }
+    else {
+      g['graph_axis_style'].add(key);
+    }
+    show_column_dists();
+  }
+
   show_column_dists = function() {
     const
       COLS_PER_GRAPH = 6;
@@ -181,7 +216,8 @@ var
       cols = numeric.transpose(g['data']['data']),
       converted, x, y, layout,
       width = Math.round(COLS_PER_GRAPH/12 * $('.container').width()),
-      exclude_missing = $('#distribution_missing').prop('checked');
+      exclude_missing = $('#distribution_missing').prop('checked'),
+      log_axes_list = '';
     $('#distributions').empty();
     for (var col in g['data']['meta']['header']) { // 0.. cols
       if (g['excluded_cols'].has(parseInt(col))) {
@@ -202,16 +238,19 @@ var
            y: y,
            type: 'bar'
         } ];
-        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: 'category'}, yaxis: { title: 'Count' }, margin: { r: 0, pad: 0 } };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: 'category'}, yaxis: { title: 'Count', type: graph_axis('dist', col, 'y') }, margin: { r: 0, pad: 0 } };
       }
       else { // numeric
         converted = [{ x: cols[col], type: 'histogram' }];
-        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col]}, yaxis: { title: 'Count' }, margin: { r: 0, pad: 0 } };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('dist', col, 'x')}, yaxis: { title: 'Count', type: graph_axis('dist', col, 'y') }, margin: { r: 0, pad: 0 } };
+        log_axes_list += "<li><a id='dist_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>";
       }
+      log_axes_list += "<li><a id='dist_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
       target = $('#distributions').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="dist_' + col + '" style="width: ' + width + 'px"></div></div>');
       Plotly.purge(document.getElementById("dist_" + col));
       Plotly.plot("dist_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
     }
+    $('#distribution_log_ul').html(log_axes_list);
   },
 
   init_relationships = function() {
@@ -239,7 +278,8 @@ var
       label = $('#relationship_label').val(),
       converted, x, y, layout,
       width = Math.round(COLS_PER_GRAPH/12 * $('.container').width()),
-      exclude_missing = $('#relationship_missing').prop('checked');
+      exclude_missing = $('#relationship_missing').prop('checked'),
+      log_axes_list = '';
 
     // clear existing plots if any
     $('#relationships div div').each(function () {
@@ -298,7 +338,8 @@ var
             type: 'bar'
           });
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, yaxis: { type: graph_axis('rel', col, 'y'), title: 'Count' }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
+        log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] != 'categorical') { // num vs num -> scatter
         x = [];
@@ -323,7 +364,9 @@ var
           type: 'scatter',
           opacity: 0.8
         }];
-        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('rel', col, 'x') }, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' };
+        log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>";
+        log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') { // col-numeric (x) vs feature-cat (y)
         counts = {};
@@ -364,7 +407,9 @@ var
             });
           }
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] + scale }, margin: { r: 0, pad: 0 }, barmode: 'stack', yaxis: { title: 'Count' }};
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] + scale, type: graph_axis('rel', col, 'x') }, yaxis: { title: 'Count', type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack'};
+        log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>";
+        log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
       }
       else { // cat (x) vs num (y)
         col_distinct_count = Object.keys(g['summary']['columns'][col]['distinct']).length;
@@ -396,7 +441,8 @@ var
             boxpoints: 'Outliers'
           });
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col] }, yaxis: { title: g['data']['meta']['header'][feature] }, margin: { r: 0, pad: 0 }};
+        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col]}, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }};
+        log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
       }
       $('#relationships').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
       try {
@@ -405,6 +451,7 @@ var
         $('#corr_' + col).html('Error: ' + error);
       }
     }
+    $('#relationships_log_ul').html(log_axes_list);
   },
 
   init_prediction = function() {
@@ -1021,6 +1068,7 @@ var
   process = function(data) {
     g['data'] = data;
     g['excluded_cols'] = new Set();
+    g['graph_axis_style'] = new Set();
     g['has_predictions'] = false;
     g['displayModeBar'] = false;
     g['data_ok'] = false;
@@ -1030,6 +1078,9 @@ var
     calculate_all();
 
     $('#distribution_missing').change(show_column_dists);
+    $('#distribution_log_ul').on("click", "li", update_dist_graph);
+    $('#relationships_log_ul').on("click", "li", update_rel_graph);
+
     $('#relationship_feature,#relationship_label,#relationship_missing').change(show_relationships);
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
