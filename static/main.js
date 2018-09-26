@@ -243,7 +243,7 @@ var
       else { // numeric
         converted = [{ x: cols[col], type: 'histogram' }];
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('dist', col, 'x')}, yaxis: { title: 'Count', type: graph_axis('dist', col, 'y') }, margin: { r: 0, pad: 0 } };
-        log_axes_list += "<li><a id='dist_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>";
+        // log_axes_list += "<li><a id='dist_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
       }
       log_axes_list += "<li><a id='dist_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
       target = $('#distributions').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="dist_' + col + '" style="width: ' + width + 'px"></div></div>');
@@ -365,7 +365,7 @@ var
           opacity: 0.8
         }];
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('rel', col, 'x') }, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' };
-        log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>";
+        // log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
         log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') { // col-numeric (x) vs feature-cat (y)
@@ -408,7 +408,7 @@ var
           }
         }
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] + scale, type: graph_axis('rel', col, 'x') }, yaxis: { title: 'Count', type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack'};
-        log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>";
+        // log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
         log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
       }
       else { // cat (x) vs num (y)
