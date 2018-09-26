@@ -183,7 +183,7 @@ var
     else {
       return '-';
     }
-  }
+  },
 
   update_rel_graph = function(ev) {
     var target = "" + ev.target.id,
@@ -195,7 +195,7 @@ var
       g['graph_axis_style'].add(key);
     }
     show_relationships();
-  }
+  },
 
   update_dist_graph = function(ev) {
     var target = "" + ev.target.id,
@@ -207,7 +207,19 @@ var
       g['graph_axis_style'].add(key);
     }
     show_column_dists();
-  }
+  },
+
+  graph_dropdown = function(tab, col, axis) {
+    var
+      key = tab + '_' + col + '_' + axis;
+    // we are not including the axis since it is always y
+    if (g['graph_axis_style'].has(key)) {
+      return "<li><a id='" + tab + "_" + col + "_" + axis + "' href='#'>Use linear scale for " + escape_html(g['data']['meta']['header'][col]) + "</a></li>";
+    }
+    else {
+      return "<li><a id='" + tab + "_" + col + "_" + axis + "' href='#'>Use log scale for " + escape_html(g['data']['meta']['header'][col]) + "</a></li>";
+    }
+  },
 
   show_column_dists = function() {
     const
@@ -245,7 +257,7 @@ var
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('dist', col, 'x')}, yaxis: { title: 'Count', type: graph_axis('dist', col, 'y') }, margin: { r: 0, pad: 0 } };
         // log_axes_list += "<li><a id='dist_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
       }
-      log_axes_list += "<li><a id='dist_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
+      log_axes_list += graph_dropdown('dist', col, 'y'); 
       target = $('#distributions').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="dist_' + col + '" style="width: ' + width + 'px"></div></div>');
       Plotly.purge(document.getElementById("dist_" + col));
       Plotly.plot("dist_" + col, converted, layout, {displayModeBar: g['displayModeBar']});
@@ -339,7 +351,7 @@ var
           });
         }
         layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, yaxis: { type: graph_axis('rel', col, 'y'), title: 'Count' }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
-        log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
+        log_axes_list += graph_dropdown('rel', col, 'y');
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] != 'categorical') { // num vs num -> scatter
         x = [];
@@ -366,7 +378,7 @@ var
         }];
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('rel', col, 'x') }, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' };
         // log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
-        log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
+        log_axes_list += graph_dropdown('rel', col, 'y'); 
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') { // col-numeric (x) vs feature-cat (y)
         counts = {};
@@ -409,7 +421,7 @@ var
         }
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] + scale, type: graph_axis('rel', col, 'x') }, yaxis: { title: 'Count', type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack'};
         // log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
-        log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
+        log_axes_list += graph_dropdown('rel', col, 'y');
       }
       else { // cat (x) vs num (y)
         col_distinct_count = Object.keys(g['summary']['columns'][col]['distinct']).length;
@@ -442,7 +454,7 @@ var
           });
         }
         layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col]}, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }};
-        log_axes_list += "<li><a id='rel_" + col + "_y' href='#'>" + g['data']['meta']['header'][col] + ": y-axis</a></li>";
+        log_axes_list += graph_dropdown('rel', col, 'y');
       }
       $('#relationships').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
       try {
@@ -1129,6 +1141,23 @@ var
       return s
     }
   },
+
+  ENTITY_MAP = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '/': '&#x2F;',
+    '`': '&#x60;',
+    '=': '&#x3D;'
+  },
+
+  escape_html = function (string) {
+    return String(string).replace(/[&<>"'`=\/]/g, function (s) {
+      return ENTITY_MAP[s];
+    });
+  };
 
   // upload page functionality
   populate_recent = function () {
