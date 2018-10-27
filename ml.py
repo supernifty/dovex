@@ -136,13 +136,13 @@ def evaluate(data_fh, config, learner, learner_features=None):
     }
 
     if pre['y_predict'] in pre['categorical_cols']: # use accuracy
-        scores = sklearn.model_selection.cross_val_score(learner, pre['X'], pre['y'], cv=5, scoring='accuracy')
-        cv_predictions = sklearn.model_selection.cross_val_predict(learner, pre['X'], pre['y'], cv=5)
+        scores = sklearn.model_selection.cross_val_score(learner, pre['X'], pre['y'], cv=3, scoring='accuracy')
+        cv_predictions = sklearn.model_selection.cross_val_predict(learner, pre['X'], pre['y'], cv=3)
         confusion = sklearn.metrics.confusion_matrix(pre['y'], cv_predictions, labels=list(pre['y_labels']))
         result['confusion'] = confusion.tolist()
         result['y_labels'] = [' {}'.format(y) for y in list(pre['y_labels'])] # plotly acts weird for purely numeric labels
     else: # use MSE
-        scores = sklearn.model_selection.cross_val_score(learner, pre['X'], pre['y'], cv=5, scoring='r2')
+        scores = sklearn.model_selection.cross_val_score(learner, pre['X'], pre['y'], cv=3, scoring='r2')
 
     # feature importance
     if learner_features is not None:
