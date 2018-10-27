@@ -248,7 +248,7 @@ def logistic_regression(data_fh, config):
         perform evaluation using logistic regression
     '''
     #learner = sklearn.linear_model.LogisticRegression(C=1e5)
-    learner = sklearn.linear_model.LogisticRegression(solver='lbfgs', multi_class='auto')
+    learner = sklearn.linear_model.LogisticRegression(solver='lbfgs', multi_class='multinomial')
     return evaluate(data_fh, config, learner, logistic_regression_features)
 
 def svc(data_fh, config):
