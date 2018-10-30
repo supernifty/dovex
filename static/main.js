@@ -497,8 +497,8 @@ var
       $('#prediction_config').html('<div class="alert alert-info"><strong>Excluded inputs:</strong> ' + excluded_list.join(', ') + '</div>');
     }
     calculate_summary();
-    show_missing();
-    show_column_dists();
+    g['missing_ok'] = false;
+    g['dists_ok'] = false;
     g['relationships_ok'] = false;
     g['data_ok'] = false;
     g['correlation_ok'] = false;
@@ -1047,6 +1047,20 @@ var
     }
   },
 
+  update_dists = function() {
+    if (!g['dists_ok']) {
+      show_column_dists();
+      g['dists_ok'] = true;
+    }
+  },
+
+  update_missing = function() {
+    if (!g['missing_ok']) {
+      show_missing();
+      g['missing_ok'] = true;
+    }
+  },
+
   update_relationships = function() {
     if (!g['relationships_ok']) {
       init_relationships();
@@ -1067,8 +1081,8 @@ var
       show_overview,
       calculate_summary,
       show_columns,
-      show_missing,
-      show_column_dists,
+      update_missing,
+      update_dists,
       update_relationships, // optional
       init_prediction,
       save_recent
@@ -1107,6 +1121,12 @@ var
       }
       else if (target == '#tab_relationship') {
         update_relationships();
+      }
+      else if (target == '#tab_missing') {
+        update_missing();
+      }
+      else if (target == '#tab_inputs') {
+        update_dists();
       }
     });
   },
