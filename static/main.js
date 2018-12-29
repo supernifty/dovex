@@ -762,7 +762,7 @@ var
       highlight_value = g['data']['data'][i][highlight_col];
       if (datatype_highlight == 'categorical') {
         if (!(highlight_value in traces)) {
-          traces[highlight_value] = {'x': [], 'y': [], 'text': [], name: highlight_value, mode: graph_type, type: 'scatter', opacity: 0.8};
+          traces[highlight_value] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', name: highlight_value, mode: graph_type, type: 'scatter', opacity: 0.8};
         }
         traces[highlight_value]['x'].push(result['projection'][point][0]);
         traces[highlight_value]['y'].push(result['projection'][point][1]);
@@ -770,7 +770,7 @@ var
       }
       else {
         if (!('' in traces)) {
-          traces[''] = {'x': [], 'y': [], 'text': [], mode: graph_type, type: 'scatter', opacity: 0.8, showscale: true, marker: {color: []}};
+          traces[''] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', mode: graph_type, type: 'scatter', opacity: 0.8, showscale: true, marker: {color: []}};
         }
         traces['']['x'].push(result['projection'][point][0]);
         traces['']['y'].push(result['projection'][point][1]);
