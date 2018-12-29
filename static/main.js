@@ -469,14 +469,14 @@ var
   init_prediction = function() {
     var old_header = $('#outcome').val();
     $('#outcome').empty();
-    $('#projection_outcome').empty();
+    $('#projection_highlight').empty();
     for (header in g['data']['meta']['header']) {
       $('#outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
-      $('#projection_outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
+      $('#projection_highlight').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
     }
     if (old_header != null) {
       $('#outcome').val(old_header);
-      $('#projection_outcome').val(old_header);
+      $('#projection_highlight').val(old_header);
     }
     show_predictors();
     update_excluded();
@@ -740,11 +740,13 @@ var
     var traces = {},
         converted = [],
         layout,
-        datatype = g['data']['meta']['datatype'][$('#projection_outcome').val()],
-        feature_col = $('#projection_outcome').val(),
+        datatype_highlight = g['data']['meta']['datatype'][$('#projection_highlight').val()],
+        highlight_col = $('#projection_highlight').val(),
+        graph_type = $('#projection_text').prop('checked') ? "markers+text" : "markers",
         max_missing = parseInt($('#max_missing_projection').val()),
         point = 0,
-        notes = '';
+        notes = '',
+        highlight_value;
 
     if ('error' in result) {
       $('#reduction_result').html('<div class="alert alert-danger alert-dismissable">An error occurred: ' + result['error'] + '</div>')
@@ -757,21 +759,23 @@ var
       if (g['summary']['missing_row'][i] >= max_missing) {
         continue
       }
-      value = g['data']['data'][i][feature_col];
-      if (datatype == 'categorical') {
-        if (!(value in traces)) {
-          traces[value] = {'x': [], 'y': [], name: value, mode: 'markers', type: 'scatter', opacity: 0.8};
+      highlight_value = g['data']['data'][i][highlight_col];
+      if (datatype_highlight == 'categorical') {
+        if (!(highlight_value in traces)) {
+          traces[highlight_value] = {'x': [], 'y': [], 'text': [], name: highlight_value, mode: graph_type, type: 'scatter', opacity: 0.8};
         }
-        traces[value]['x'].push(result['projection'][point][0]);
-        traces[value]['y'].push(result['projection'][point][1]);
+        traces[highlight_value]['x'].push(result['projection'][point][0]);
+        traces[highlight_value]['y'].push(result['projection'][point][1]);
+        traces[highlight_value]['text'].push(highlight_value);
       }
       else {
         if (!('' in traces)) {
-          traces[''] = {'x': [], 'y': [], mode: 'markers', type: 'scatter', opacity: 0.8, showscale: true, marker: {color: []}};
+          traces[''] = {'x': [], 'y': [], 'text': [], mode: graph_type, type: 'scatter', opacity: 0.8, showscale: true, marker: {color: []}};
         }
         traces['']['x'].push(result['projection'][point][0]);
         traces['']['y'].push(result['projection'][point][1]);
-        traces['']['marker']['color'].push(value);
+        traces['']['text'].push(highlight_value);
+        traces['']['marker']['color'].push(highlight_value);
       }
       point++;
     }
