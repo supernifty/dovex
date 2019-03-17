@@ -11,7 +11,7 @@ import uuid
 import argparse
 import pandas as pd
 import numpy as np
-from pandas.core.dtypes.common import _get_dtype_from_object
+from pandas.core.dtypes.common import infer_dtype_from_object
 
 import flask
 
@@ -86,7 +86,7 @@ def matches_dtypes(df, dtypes):
     * To select Pandas datetimetz dtypes, use 'datetimetz' (new in 0.20.0),
       or a 'datetime64[ns, tz]' string
     """
-    dtypes = list(map(_get_dtype_from_object, dtypes))
+    dtypes = list(map(infer_dtype_from_object, dtypes))
     boolean_list = [any([issubclass(coltype.type,t) for t in dtypes])
                      for (column,coltype) in df.dtypes.iteritems()]
     return pd.Series(boolean_list, index=df.columns)
