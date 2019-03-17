@@ -1,6 +1,6 @@
 Flask
 numpy
-pandas
+pandas==0.22
 pytest
 scipy
 sklearn
