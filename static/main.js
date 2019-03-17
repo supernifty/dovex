@@ -295,7 +295,7 @@ var
 
     // clear existing plots if any
     $('#relationships div div').each(function () {
-        if (this.id != '') {
+        if (this.id != '' && this.id.indexOf('corr_') == 0) {
           Plotly.purge(this.id);
         }
     });
@@ -357,15 +357,27 @@ var
         x = [];
         y = [];
         z = [];
+        c = [];
+        seen = [];
         for (row in g['data']['data']) {
           x.push(g['data']['data'][row][col])
           y.push(g['data']['data'][row][feature])
           // selected column as label
           if (label != '') {
             z.push(g['data']['data'][row][label]);
+            if (g['data']['meta']['datatype'][label] != 'categorical') {
+              c.push(g['colours'][0]); // TODO range not yet implemented
+            }
+            else {
+              if (seen.indexOf(z[z.length - 1]) == -1) {
+                seen.push(z[z.length - 1]);
+              }
+              c.push(g['colours'][seen.indexOf(z[z.length - 1]) % g['colours'].length]);
+            }
           }
           else {
             z.push('');
+            c.push(g['colours'][0]);
           }
         }
         converted = [{
@@ -374,7 +386,8 @@ var
           text: z,
           mode: 'markers',
           type: 'scatter',
-          opacity: 0.8
+          opacity: 0.8,
+          marker: { 'color': c }
         }];
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('rel', col, 'x') }, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' };
         // log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
@@ -1100,10 +1113,11 @@ var
     g['excluded_cols'] = new Set();
     g['graph_axis_style'] = new Set();
     g['has_predictions'] = false;
-    g['displayModeBar'] = false;
+    g['displayModeBar'] = false; // TODO setting
     g['data_ok'] = false;
     g['relationships_ok'] = false;
     g['correlation_ok'] = false;
+    g['colours'] = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
 
     calculate_all();
 
