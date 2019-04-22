@@ -221,6 +221,15 @@ var
     }
   },
 
+  sorted_keys = function(d) {
+    var result = [];
+    for(var key in d) {
+      result[result.length] = key;
+    }
+    result.sort();
+    return result;
+  },
+
   show_column_dists = function() {
     const
       COLS_PER_GRAPH = 6;
@@ -238,7 +247,8 @@ var
       x = [];
       y = [];
       if (g['data']['meta']['datatype'][col] == 'categorical') {
-        for (distinct in g['summary']['columns'][col]['distinct']) {
+        // sort the keys
+        for (var distinct of sorted_keys(g['summary']['columns'][col]['distinct'])) {
            if (exclude_missing && (distinct == '' || g['summary']['columns'][col]['distinct'][distinct] == '')) {
              continue;
            }
@@ -281,7 +291,7 @@ var
   },
 
   show_relationships = function() {
-      const
+    const
       COLS_PER_GRAPH = 6,
       MAX_CATEGORIES = 100;
     var
@@ -336,7 +346,7 @@ var
         }
         // convert to traces - one trace per feature
         converted = [];
-        for (current_feature_val in counts) {
+        for (var current_feature_val of sorted_keys(counts)) {
           x = [];
           y = [];
           for (current_x_val in counts[current_feature_val]) {
@@ -350,7 +360,7 @@ var
             type: 'bar'
           });
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, yaxis: { type: graph_axis('rel', col, 'y'), title: 'Count' }, margin: { r: 0, pad: 0 }, barmode: 'stack' };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category' }, yaxis: { type: graph_axis('rel', col, 'y'), title: 'Count' }, margin: { r: 0, pad: 0 }, barmode: 'stack' }; // , height: 800, width: 1200 };
         log_axes_list += graph_dropdown('rel', col, 'y');
       }
       else if (g['data']['meta']['datatype'][col] != 'categorical' && g['data']['meta']['datatype'][feature] != 'categorical') { // num vs num -> scatter
@@ -387,9 +397,9 @@ var
           mode: 'markers',
           type: 'scatter',
           opacity: 0.8,
-          marker: { 'color': c }
+          marker: { 'color': c, 'size': 16 }
         }];
-        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('rel', col, 'x') }, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' };
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('rel', col, 'x') }, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' }; // , height: 800, width: 1200 };
         // log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
         log_axes_list += graph_dropdown('rel', col, 'y'); 
       }
@@ -423,7 +433,7 @@ var
 
         // convert to traces - one trace per feature
         converted = [];
-        for (current_feature_val in counts) {
+        for (var current_feature_val of sorted_keys(counts)) {
           if (counts[current_feature_val].length > 0) {
             converted.push({
               x: counts[current_feature_val],
@@ -432,7 +442,7 @@ var
             });
           }
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] + scale, type: graph_axis('rel', col, 'x') }, yaxis: { title: 'Count', type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack'};
+        layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col] + scale, type: graph_axis('rel', col, 'x') }, yaxis: { title: 'Count', type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack' }; // , height: 800, width: 1200};
         // log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
         log_axes_list += graph_dropdown('rel', col, 'y');
       }
@@ -458,7 +468,7 @@ var
         }
         // convert to traces - one trace per feature
         converted = [];
-        for (current_x_val in counts) {
+        for (var current_x_val of sorted_keys(counts)) {
           converted.push({
             y: counts[current_x_val],
             name: current_x_val,
@@ -466,7 +476,7 @@ var
             boxpoints: 'Outliers'
           });
         }
-        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col]}, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }};
+        layout = { title: g['data']['meta']['header'][col], xaxis: { type: 'category', title: g['data']['meta']['header'][col]}, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 } }; // , height: 800, width: 1200};
         log_axes_list += graph_dropdown('rel', col, 'y');
       }
       $('#relationships').append('<div class="col-md-' + COLS_PER_GRAPH + '"><div id="corr_' + col + '" style="width: ' + width + 'px"></div></div>');
@@ -1113,7 +1123,7 @@ var
     g['excluded_cols'] = new Set();
     g['graph_axis_style'] = new Set();
     g['has_predictions'] = false;
-    g['displayModeBar'] = false; // TODO setting
+    g['displayModeBar'] = true; // TODO setting
     g['data_ok'] = false;
     g['relationships_ok'] = false;
     g['correlation_ok'] = false;
