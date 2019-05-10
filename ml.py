@@ -290,9 +290,16 @@ def pca(data_fh, config):
 
 def mds(data_fh, config):
     '''
-        cluster data using pca
+        cluster data using mds
     '''
     projector = sklearn.manifold.MDS(n_components=2, max_iter=100, verbose=1)
+    return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['mds'])
+
+def tsne(data_fh, config):
+    '''
+        cluster data using tsne
+    '''
+    projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=30.0, n_iter=300)
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['mds'])
 
 METHODS = {
@@ -302,5 +309,6 @@ METHODS = {
     'linear': linear_regression,
     'svr': svr,
     'pca': pca,
-    'mds': mds
+    'mds': mds,
+    'tsne': tsne
 }
