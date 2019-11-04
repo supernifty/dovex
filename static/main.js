@@ -575,7 +575,7 @@ var
       distinct[column] = Object.keys(g['summary']['columns'][column]['distinct']).length;
     }
     $('#prediction_result').html('<div class="alert alert-info">Processing...</div>')
-    predictor.fit(g['data']['data'], $('#max_missing').val(), $('#outcome').val(), g['excluded_cols'], g['data']['meta']['datatype'], distinct, prediction_result_callback, prediction_result_callback_error);
+    predictor.fit(g['data']['data'], $('#max_missing').val(), $('#outcome').val(), g['excluded_cols'], g['data']['meta']['datatype'], distinct, '', prediction_result_callback, prediction_result_callback_error);
   },
 
   prediction_result_callback_error = function() {
@@ -723,6 +723,16 @@ var
     calculate_all();
   },
 
+  change_reducer = function() {
+    var reducer = $('#reducer').val();
+    if (reducer == 'tsne') {
+      $('#cluster_custom').html('<div class="col-md-4">Perplexity: <input class="form-control" type="text" value="30" id="perplexity"></div>');
+    }
+    else {
+      $('#cluster_custom').html('');
+    }
+  },
+
   show_reduction = function() {
     var reducer = ml[$('#reducer').val()](),
       distinct = {};
@@ -730,7 +740,7 @@ var
       distinct[column] = Object.keys(g['summary']['columns'][column]['distinct']).length;
     }
     $('#reduction_result').html('<div class="alert alert-info">Processing...</div>')
-    reducer.fit(g['data']['data'], $('#max_missing_projection').val(), null, g['excluded_cols'], g['data']['meta']['datatype'], distinct, reduction_result_callback, reduction_result_callback_error);
+    reducer.fit(g['data']['data'], $('#max_missing_projection').val(), null, g['excluded_cols'], g['data']['meta']['datatype'], distinct, $('#perplexity').val(), reduction_result_callback, reduction_result_callback_error);
   },
 
   projection_feature = function(data, target, component) {
@@ -1139,6 +1149,7 @@ var
     $('#outcome').change(show_predictors);
     $('#run_predictor').click(show_prediction);
     $('#run_reducer').click(show_reduction);
+    $('#reducer').change(change_reducer);
     $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
       var target = $(e.target).attr("href") // activated tab
       if (target == '#tab_data') {
@@ -1155,6 +1166,9 @@ var
       }
       else if (target == '#tab_inputs') {
         update_dists();
+      }
+      else if (target == '#tab_cluster') {
+        change_reducer();
       }
     });
   },

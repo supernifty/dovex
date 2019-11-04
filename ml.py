@@ -299,7 +299,7 @@ def tsne(data_fh, config):
     '''
         cluster data using tsne
     '''
-    projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=30.0, n_iter=300)
+    projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), n_iter=300)
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['mds'])
 
 METHODS = {

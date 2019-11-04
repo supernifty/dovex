@@ -19,7 +19,7 @@ var
 
   server_side_predictor = function(method, datatype, name) {
       return {
-        fit: function(data, x_exclude, y_predict, y_exclude, datatypes, distinct, callback, callback_error) {
+        fit: function(data, x_exclude, y_predict, y_exclude, datatypes, distinct, perplexity, callback, callback_error) {
           // x_exclude, y_predict, y_exclude, scale
           config = {
             method: method,
@@ -28,7 +28,8 @@ var
             'y_predict': y_predict, // null or number
             'scale': '1',
             'datatype': JSON.stringify(datatypes),
-            'distinct': JSON.stringify(distinct)
+            'distinct': JSON.stringify(distinct),
+            'perplexity': perplexity
           }
           process_on_server(config, callback, callback_error);
         },
