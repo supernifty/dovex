@@ -777,6 +777,7 @@ var
         highlight_col = $('#projection_highlight').val(),
         graph_type = $('#projection_text').prop('checked') ? "markers+text" : "markers",
         max_missing = parseInt($('#max_missing_projection').val()),
+        width = Math.round($('.container').width()),
         point = 0,
         notes = '',
         highlight_value;
@@ -795,7 +796,7 @@ var
       highlight_value = g['data']['data'][i][highlight_col];
       if (datatype_highlight == 'categorical') {
         if (!(highlight_value in traces)) {
-          traces[highlight_value] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', name: highlight_value, mode: graph_type, type: 'scatter', opacity: 0.8};
+          traces[highlight_value] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', name: highlight_value, mode: graph_type, type: 'scatter', opacity: 0.8, marker: {size: 12}};
         }
         traces[highlight_value]['x'].push(result['projection'][point][0]);
         traces[highlight_value]['y'].push(result['projection'][point][1]);
@@ -803,7 +804,7 @@ var
       }
       else {
         if (!('' in traces)) {
-          traces[''] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', mode: graph_type, type: 'scatter', opacity: 0.8, showscale: true, marker: {color: []}};
+          traces[''] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', mode: graph_type, type: 'scatter', opacity: 0.8, showscale: true, marker: {color: [], size: 12}};
         }
         traces['']['x'].push(result['projection'][point][0]);
         traces['']['y'].push(result['projection'][point][1]);
@@ -815,7 +816,7 @@ var
     for (var trace in traces) {
       converted.push(traces[trace]);
     }
-    layout = { title: 'Projection', hovermode: 'closest' };
+    layout = { title: 'Projection', hovermode: 'closest', width: width, height: width * 2/3 };
     Plotly.plot("reduction", converted, layout);
     if ('features' in result) {
       projection_feature(result['features'], "projection_features", 1 );
