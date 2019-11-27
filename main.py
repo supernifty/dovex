@@ -16,6 +16,7 @@ from pandas.core.dtypes.common import infer_dtype_from_object
 import flask
 
 import ml
+import proxy
 import util
 
 #import plotly.graph_objs as go
@@ -30,6 +31,7 @@ args = parser.parse_args()
 app = flask.Flask(__name__, template_folder='templates')
 app.config.from_pyfile('config.py')
 app.secret_key = 'ducks in space'
+app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 
 @app.route('/', methods=['GET', 'POST'])
 def main():
