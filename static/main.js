@@ -493,13 +493,17 @@ var
     var old_header = $('#outcome').val();
     $('#outcome').empty();
     $('#projection_highlight').empty();
+    $('#projection_highlight_2').empty();
+    $('#projection_highlight_2').append($('<option>', {value:'', text:'(same)'}));
     for (header in g['data']['meta']['header']) {
       $('#outcome').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
       $('#projection_highlight').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
+      $('#projection_highlight_2').append($('<option>', {value:header, text:g['data']['meta']['header'][header]}));
     }
     if (old_header != null) {
       $('#outcome').val(old_header);
       $('#projection_highlight').val(old_header);
+      $('#projection_highlight_2').val(old_header);
     }
     show_predictors();
     update_excluded();
@@ -800,7 +804,11 @@ var
         }
         traces[highlight_value]['x'].push(result['projection'][point][0]);
         traces[highlight_value]['y'].push(result['projection'][point][1]);
-        traces[highlight_value]['text'].push(highlight_value);
+        if ($('#projection_highlight').val() == '') {
+          traces[highlight_value]['text'].push(highlight_value);
+        } else {
+          traces[highlight_value]['text'].push(g['data']['data'][i][$('#projection_highlight_2').val()]);
+        }
       }
       else {
         if (!('' in traces)) {
@@ -808,7 +816,11 @@ var
         }
         traces['']['x'].push(result['projection'][point][0]);
         traces['']['y'].push(result['projection'][point][1]);
-        traces['']['text'].push(highlight_value);
+        if ($('#projection_highlight').val() == '') {
+          traces['']['text'].push(highlight_value);
+        } else {
+          traces['']['text'].push(g['data']['data'][i][$('#projection_highlight_2').val()]);
+        }
         traces['']['marker']['color'].push(highlight_value);
       }
       point++;
