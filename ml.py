@@ -6,6 +6,7 @@
 import collections
 import csv
 import json
+import sys
 import util
 
 import numpy as np
@@ -22,6 +23,11 @@ MAX_DISTINCT = 100
 MAX_CELLS = 1e6
 MAX_ROWS = {
     'mds': 1000
+}
+
+CLASS_WEIGHT_MAP = {
+  'unadjusted': None,
+  'balanced': 'balanced'
 }
 
 def preprocess(data_fh, config):
@@ -248,21 +254,21 @@ def logistic_regression(data_fh, config):
         perform evaluation using logistic regression
     '''
     #learner = sklearn.linear_model.LogisticRegression(C=1e5)
-    learner = sklearn.linear_model.LogisticRegression(solver='lbfgs', multi_class='multinomial')
+    learner = sklearn.linear_model.LogisticRegression(solver='lbfgs', multi_class='multinomial', class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, logistic_regression_features)
 
 def svc(data_fh, config):
     '''
         perform evaluation using svm
     '''
-    learner = sklearn.svm.LinearSVC()
+    learner = sklearn.svm.LinearSVC(class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, svc_features)
 
 def random_forest(data_fh, config):
     '''
         perform evaluation using rf
     '''
-    learner = sklearn.ensemble.RandomForestClassifier()
+    learner = sklearn.ensemble.RandomForestClassifier(class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, random_forest_features)
 
 def linear_regression(data_fh, config):

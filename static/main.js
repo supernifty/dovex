@@ -397,7 +397,7 @@ var
           mode: 'markers',
           type: 'scatter',
           opacity: 0.8,
-          marker: { 'color': c, 'size': 16 }
+          marker: { 'color': c, 'size': MARKER_SIZE }
         }];
         layout = { title: g['data']['meta']['header'][col], xaxis: { title: g['data']['meta']['header'][col], type: graph_axis('rel', col, 'x') }, yaxis: { title: g['data']['meta']['header'][feature], type: graph_axis('rel', col, 'y') }, margin: { r: 0, pad: 0 }, barmode: 'stack', hovermode: 'closest' }; // , height: 800, width: 1200 };
         // log_axes_list += "<li><a id='rel_" + col + "_x' href='#'>" + g['data']['meta']['header'][col] + ": x-axis</a></li>"; // plot.ly bug
@@ -579,7 +579,7 @@ var
       distinct[column] = Object.keys(g['summary']['columns'][column]['distinct']).length;
     }
     $('#prediction_result').html('<div class="alert alert-info">Processing...</div>')
-    predictor.fit(g['data']['data'], $('#max_missing').val(), $('#outcome').val(), g['excluded_cols'], g['data']['meta']['datatype'], distinct, '', prediction_result_callback, prediction_result_callback_error);
+    predictor.fit(g['data']['data'], $('#max_missing').val(), $('#outcome').val(), g['excluded_cols'], g['data']['meta']['datatype'], distinct, '', prediction_result_callback, prediction_result_callback_error, $('#class_weight').val());
   },
 
   prediction_result_callback_error = function() {
@@ -744,7 +744,7 @@ var
       distinct[column] = Object.keys(g['summary']['columns'][column]['distinct']).length;
     }
     $('#reduction_result').html('<div class="alert alert-info">Processing...</div>')
-    reducer.fit(g['data']['data'], $('#max_missing_projection').val(), null, g['excluded_cols'], g['data']['meta']['datatype'], distinct, $('#perplexity').val(), reduction_result_callback, reduction_result_callback_error);
+    reducer.fit(g['data']['data'], $('#max_missing_projection').val(), null, g['excluded_cols'], g['data']['meta']['datatype'], distinct, $('#perplexity').val(), reduction_result_callback, reduction_result_callback_error, '');
   },
 
   projection_feature = function(data, target, component) {
@@ -800,7 +800,7 @@ var
       highlight_value = g['data']['data'][i][highlight_col];
       if (datatype_highlight == 'categorical') {
         if (!(highlight_value in traces)) {
-          traces[highlight_value] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', name: highlight_value, mode: graph_type, type: 'scatter', opacity: 0.8, marker: {size: 12}};
+          traces[highlight_value] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', name: highlight_value, mode: graph_type, type: 'scatter', opacity: 0.8, marker: {size: MARKER_SIZE}};
         }
         traces[highlight_value]['x'].push(result['projection'][point][0]);
         traces[highlight_value]['y'].push(result['projection'][point][1]);
@@ -812,7 +812,7 @@ var
       }
       else {
         if (!('' in traces)) {
-          traces[''] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', mode: graph_type, type: 'scatter', opacity: 0.8, showscale: true, marker: {color: [], size: 12}};
+          traces[''] = {'x': [], 'y': [], 'text': [], textposition: 'bottom right', mode: graph_type, type: 'scatter', opacity: 0.8, showscale: true, marker: {color: [], size: MARKER_SIZE}};
         }
         traces['']['x'].push(result['projection'][point][0]);
         traces['']['y'].push(result['projection'][point][1]);
@@ -1227,6 +1227,8 @@ var
     '`': '&#x60;',
     '=': '&#x3D;'
   },
+
+  MARKER_SIZE = 8,
 
   escape_html = function (string) {
     return String(string).replace(/[&<>"'`=\/]/g, function (s) {

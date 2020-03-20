@@ -284,18 +284,25 @@
          <div class="tab-pane" id="tab_predict">
 
        <div class="row">
-          <div class="col-md-4">
+          <div class="col-md-3">
             Select the feature to predict:
             <select id="outcome" class="form-control"></select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             Select a prediction algorithm:
             <select id="predictor" class="form-control">
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             Missing data:
             <select id="max_missing" class="form-control">
+            </select>
+          </div>
+          <div class="col-md-3">
+            Class weights:
+            <select id="class_weight" class="form-control">
+              <option value="unadjusted">Unadjusted</option>
+              <option value="balanced">Balanced</option>
             </select>
           </div>
         </div>
