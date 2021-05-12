@@ -529,7 +529,7 @@ var
     g['relationships_ok'] = false;
     g['data_ok'] = false;
     g['correlation_ok'] = false;
-  }
+  },
 
   show_predictors = function() {
     var outcome_datatype = g['data']['meta']['datatype'][$('#outcome').val()],
@@ -1006,84 +1006,32 @@ var
 
   show_correlation = function() {
     if (!g['correlation_ok']) {
+      var server = ml['correlation']();
+      $('#correlation').html('<div class="alert alert-info">Please wait while we calculate p-values...</div>')
+      server.fit(g['data']['data'], null, null, g['excluded_cols'], g['data']['meta']['datatype'], null, null, correlation_callback, correlation_callback_error, '');
+    }
+  },
+
+  correlation_callback = function(result) {
       Plotly.purge(document.getElementById("correlation"));
-      // calculate correlation
-      var xs = [],
-        zs = [],
-        annotations = [],
-        xpos = 0, ypos = 0,
-        statistic,
-        result,
-        readable;
-      for (x in g['data']['meta']['header']) {
-        if (g['excluded_cols'].has(parseInt(x))) {
-          continue;
-        }
-        xs.push(g['data']['meta']['header'][x]);
-        var current = [];
-        for (y in g['data']['meta']['header']) {
-          if (g['excluded_cols'].has(parseInt(y))) {
-            continue;
-          }
-          if (y == x) {
-            result = 0.0;
-            readable = '-';
-          }
-          else if (g['data']['meta']['datatype'][x] == 'categorical' && g['data']['meta']['datatype'][y] == 'categorical') {
-            // cat vs cat
-            statistic = chi_square(x, y);
-            if ('error' in statistic) {
-              result = 0.0;
-              readable = 'N/A';
-            }
-            else {
-              result = statistic['p'];
-              readable = Math.round(result * 100) / 100;
-            }
-          }
-          else if (g['data']['meta']['datatype'][x] != 'categorical' && g['data']['meta']['datatype'][y] != 'categorical') {
-            // num vs num
-            statistic = pearson_correlation(x, y);
-            if ('error' in statistic) {
-              result = 0.0;
-              readable = 'N/A';
-            }
-            else {
-              result = statistic['p'];
-              readable = Math.round(result * 100) / 100; // + ' (' + (Math.round(statistic['r'] * 10) / 10) + ')';
-            }
-          }
-          else {
-            // cat vs num
-            if (g['data']['meta']['datatype'][x] == 'categorical') {
-              statistic = anova(x, y);
-            }
-            else {
-              statistic = anova(y, x);
-            }
-            if ('error' in statistic) {
-              result = 0.0;
-              readable = 'N/A';
-            }
-            else {
-              result = statistic['p'];
-              readable = Math.round(result * 100) / 100;
-            }
-          }
-          current.push(result);
+      var data = [{ x: result['xs'], y: result['xs'], z: result['zs'], type: 'heatmap', showscale: true, colorscale: 'RdBu' }],
+        annotations = [], current;
+
+      for (x in result['xs']) {
+        current = [];
+        for (y in result['xs']) {
           annotations.push({
             xref: 'x1', yref: 'y1',
-            x: g['data']['meta']['header'][x], 
-            y: g['data']['meta']['header'][y],
-            text: readable,
+            x: result['xs'][x], 
+            y: result['xs'][y],
+            text: Math.round(result['zs'][x][y] * 100) / 100,
             font: { family: 'Arial', size: 12, color: 'rgb(50, 171, 96)' },
             showarrow: false,
             font: { color: 'white' }
           });
         }
-        zs.push(current);
       }
-      var data = [{ x: xs, y: xs, z: zs, type: 'heatmap', showscale: true, colorscale: 'RdBu' }],
+
       layout = {
         title: 'Correlation between features (p-value)',
         xaxis: { ticks: '', showgrid: true },
@@ -1094,7 +1042,10 @@ var
       };
       Plotly.newPlot('correlation', data, layout);
       g['correlation_ok'] = true;
-    }
+  },
+
+  correlation_callback_error = function() {
+      $('#correlation').html('<div class="alert alert-danger alert-dismissable">An error occurred. Correlation calculation failed.</div>')
   },
 
   update_dists = function() {
@@ -1234,7 +1185,7 @@ var
     return String(string).replace(/[&<>"'`=\/]/g, function (s) {
       return ENTITY_MAP[s];
     });
-  };
+  },
 
   // upload page functionality
   populate_recent = function () {

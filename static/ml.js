@@ -14,7 +14,10 @@ var
     // dimensionality reduction
     'pca': function() { return server_side_predictor('pca', 'reduce', 'PCA'); },
     'mds': function() { return server_side_predictor('mds', 'reduce', 'MDS'); },
-    'tsne': function() { return server_side_predictor('tsne', 'reduce', 't-SNE'); }
+    'tsne': function() { return server_side_predictor('tsne', 'reduce', 't-SNE'); },
+
+    // correlation
+    'correlation': function() { return server_side_predictor('correlation', 'reduce', 'correlation'); }
   },
 
   server_side_predictor = function(method, datatype, name) {

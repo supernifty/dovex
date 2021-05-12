@@ -11,6 +11,9 @@ import util
 
 import numpy as np
 
+import scipy
+import scipy.stats
+
 import sklearn.ensemble
 import sklearn.decomposition
 import sklearn.linear_model
@@ -308,6 +311,82 @@ def tsne(data_fh, config):
     projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), n_iter=300)
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['mds'])
 
+def correlation(data_fh, config):
+    '''
+        calculate correlation as a p-value of each feature
+    '''
+    y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
+    categorical_cols = set([i for i, x in enumerate(json.loads(config['datatype'])) if x == 'categorical'])
+    delimiter = util.choose_delimiter(data_fh)
+    meta = {}
+    data = collections.defaultdict(list)
+    counts = {}
+    missing = 0
+    # read in all the data
+    for lines, row in enumerate(csv.reader(data_fh, delimiter=delimiter)): # each row
+        if lines == 0:
+            meta['header'] = row
+            continue
+        if len(row) == 0: # skip empty lines
+            continue
+        if row[0].startswith('#'):
+            continue
+        for idx, cell in enumerate(row): # each col
+            if idx not in y_exclude:
+                colname = meta['header'][idx]
+                data[colname].append(cell)
+                if idx in categorical_cols: # count categorical
+                  if colname not in counts:
+                    counts[colname] = {}
+                  if cell not in counts[colname]:
+                    counts[colname][cell] = 0
+                  counts[colname][cell] += 1
+
+    # calculate p-values
+    xs = []
+    zs = []
+    categorical_col_names = set([meta['header'][i] for i in categorical_cols])
+    for x in sorted(data.keys()): # x is colname
+        xs.append(x)
+        current = []
+        for y in sorted(data.keys()): # y is colname
+            if x == y:
+              current.append(0)
+            else:
+              if x in categorical_col_names and y in categorical_col_names: # chi-square
+                  observed = collections.defaultdict(int)
+                  expected = {}
+                  for idx, _ in enumerate(data[x]):
+                    if data[x][idx] == '' or data[y][idx] == '':
+                      continue
+                    key = (data[x][idx], data[y][idx])
+                    observed[key] += 1
+
+                  pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [counts[x][key[0]] * counts[y][key[1]] / len(data) for key in sorted(observed.keys())])[1]
+              elif x not in categorical_col_names and y not in categorical_col_names: # both numeric: pearson correlation
+                  v1s = []
+                  v2s = []
+                  for idx, _ in enumerate(data[x]):
+                    if data[x][idx] == '' or data[y][idx] == '':
+                      continue
+                    v1s.append(float(data[x][idx]))
+                    v2s.append(float(data[y][idx]))
+                  pvalue = scipy.stats.pearsonr(v1s, v2s)[1]
+              else: # one categorical - anova
+                  groups = collections.defaultdict(list)
+                  for idx, _ in enumerate(data[x]):
+                    if data[x][idx] == '' or data[y][idx] == '':
+                      continue
+                    if x in categorical_col_names:
+                      groups[data[x][idx]].append(float(data[y][idx]))
+                    else:
+                      groups[data[y][idx]].append(float(data[x][idx]))
+                  pvalue = scipy.stats.f_oneway(*[groups[k] for k in groups])[1]
+
+              current.append(pvalue) # todo
+        zs.append(current)
+    return {'xs': xs, 'zs': zs}
+
 METHODS = {
     'logistic': logistic_regression,
     'svc': svc,
@@ -316,5 +395,6 @@ METHODS = {
     'svr': svr,
     'pca': pca,
     'mds': mds,
-    'tsne': tsne
+    'tsne': tsne,
+    'correlation': correlation
 }
