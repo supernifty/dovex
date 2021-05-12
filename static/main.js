@@ -1013,6 +1013,7 @@ var
   },
 
   correlation_callback = function(result) {
+      $('#correlation').html('')
       Plotly.purge(document.getElementById("correlation"));
       var data = [{ x: result['xs'], y: result['xs'], z: result['zs'], type: 'heatmap', showscale: true, colorscale: 'RdBu' }],
         annotations = [], current;

@@ -6,6 +6,7 @@
 import collections
 import csv
 import json
+import math
 import sys
 import util
 
@@ -353,37 +354,53 @@ def correlation(data_fh, config):
             if x == y:
               current.append(0)
             else:
-              if x in categorical_col_names and y in categorical_col_names: # chi-square
-                  observed = collections.defaultdict(int)
-                  expected = {}
-                  for idx, _ in enumerate(data[x]):
-                    if data[x][idx] == '' or data[y][idx] == '':
-                      continue
-                    key = (data[x][idx], data[y][idx])
-                    observed[key] += 1
-
-                  pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [counts[x][key[0]] * counts[y][key[1]] / len(data) for key in sorted(observed.keys())])[1]
-              elif x not in categorical_col_names and y not in categorical_col_names: # both numeric: pearson correlation
-                  v1s = []
-                  v2s = []
-                  for idx, _ in enumerate(data[x]):
-                    if data[x][idx] == '' or data[y][idx] == '':
-                      continue
-                    v1s.append(float(data[x][idx]))
-                    v2s.append(float(data[y][idx]))
-                  pvalue = scipy.stats.pearsonr(v1s, v2s)[1]
-              else: # one categorical - anova
-                  groups = collections.defaultdict(list)
-                  for idx, _ in enumerate(data[x]):
-                    if data[x][idx] == '' or data[y][idx] == '':
-                      continue
-                    if x in categorical_col_names:
-                      groups[data[x][idx]].append(float(data[y][idx]))
+              try:
+                if x in categorical_col_names and y in categorical_col_names: # chi-square
+                    observed = collections.defaultdict(int)
+                    expected = {}
+                    for idx, _ in enumerate(data[x]):
+                      if data[x][idx] == '' or data[y][idx] == '':
+                        continue
+                      key = (data[x][idx], data[y][idx])
+                      observed[key] += 1
+  
+                    total_observed = sum([observed[key] for key in observed])
+                    if total_observed > 0:
+                      pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [counts[x][key[0]] * counts[y][key[1]] / total_observed for key in sorted(observed.keys())])[1]
                     else:
-                      groups[data[y][idx]].append(float(data[x][idx]))
-                  pvalue = scipy.stats.f_oneway(*[groups[k] for k in groups])[1]
-
-              current.append(pvalue) # todo
+                      pvalue = 1
+                elif x not in categorical_col_names and y not in categorical_col_names: # both numeric: pearson correlation
+                    v1s = []
+                    v2s = []
+                    for idx, _ in enumerate(data[x]):
+                      if data[x][idx] == '' or data[y][idx] == '':
+                        continue
+                      v1s.append(float(data[x][idx]))
+                      v2s.append(float(data[y][idx]))
+                    if len(v1s) > 1 and len(v2s) > 1:
+                      pvalue = scipy.stats.pearsonr(v1s, v2s)[1]
+                    else:
+                      pvalue = 1
+                else: # one categorical - anova
+                    groups = collections.defaultdict(list)
+                    for idx, _ in enumerate(data[x]):
+                      if data[x][idx] == '' or data[y][idx] == '':
+                        continue
+                      if x in categorical_col_names:
+                        groups[data[x][idx]].append(float(data[y][idx]))
+                      else:
+                        groups[data[y][idx]].append(float(data[x][idx]))
+                    if len(groups) > 1:
+                      pvalue = scipy.stats.f_oneway(*[groups[k] for k in groups])[1]
+                      if math.isnan(pvalue): # if all values the same
+                        pvalue = 1
+                    else:
+                      pvalue = 1
+              except:
+                pvalue = -1 # problem
+              if math.isnan(pvalue):
+                pvalue = -1
+              current.append(pvalue)
         zs.append(current)
     return {'xs': xs, 'zs': zs}
 
