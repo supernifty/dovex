@@ -349,7 +349,9 @@ var
         for (var current_feature_val of sorted_keys(counts)) {
           x = [];
           y = [];
-          for (current_x_val in counts[current_feature_val]) {
+          console.log(counts[current_feature_val]);
+          for (current_x_val of sorted_keys(counts[current_feature_val])) {
+            console.log(current_x_val);
             x.push(current_x_val);
             y.push(counts[current_feature_val][current_x_val]);
           }
