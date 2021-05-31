@@ -26,7 +26,8 @@ import sklearn.model_selection
 MAX_DISTINCT = 100
 MAX_CELLS = 1e6
 MAX_ROWS = {
-    'mds': 1000
+    'mds': 1000,
+    'tsne': 10000
 }
 
 CLASS_WEIGHT_MAP = {
@@ -310,7 +311,7 @@ def tsne(data_fh, config):
         cluster data using tsne
     '''
     projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), n_iter=300)
-    return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['mds'])
+    return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['tsne'])
 
 def correlation(data_fh, config):
     '''
