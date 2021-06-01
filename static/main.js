@@ -301,7 +301,7 @@ var
       converted, x, y, layout,
       width = Math.round(COLS_PER_GRAPH/12 * $('.container').width()),
       exclude_missing = $('#relationship_missing').prop('checked'),
-      log_axes_list = '';
+      log_axes_list = '', x_vals;
 
     // clear existing plots if any
     $('#relationships div div').each(function () {
@@ -327,10 +327,12 @@ var
       }
       // cat vs cat -> stacked bar
       if (g['data']['meta']['datatype'][col] == 'categorical' && g['data']['meta']['datatype'][feature] == 'categorical') {
-        counts = {}
+        counts = {};
+        x_vals = new Set();
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
           x_val = g['data']['data'][row][col];
+          x_vals.add(x_val)
 
           if (exclude_missing && (feature_val == '' || x_val == '')) {
             continue;
@@ -346,10 +348,10 @@ var
         }
         // convert to traces - one trace per feature
         converted = [];
-        for (var current_feature_val of sorted_keys(counts)) {
+        for (var current_feature_val in counts) {
           x = [];
           y = [];
-          for (current_x_val of sorted_keys(counts[current_feature_val])) {
+          for (current_x_val of Array.from(x_vals).sort()) {
             x.push(current_x_val);
             y.push(counts[current_feature_val][current_x_val]);
           }
