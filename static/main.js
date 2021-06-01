@@ -332,12 +332,12 @@ var
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
           x_val = g['data']['data'][row][col];
-          x_vals.add(x_val)
 
           if (exclude_missing && (feature_val == '' || x_val == '')) {
             continue;
           }
 
+          x_vals.add(x_val)
           if (!(feature_val in counts)) {
             counts[feature_val] = {}
           }
@@ -348,11 +348,17 @@ var
         }
         // convert to traces - one trace per feature
         converted = [];
+        xvals_sorted = Array.from(x_vals).sort();
         for (var current_feature_val in counts) {
           x = [];
           y = [];
-          for (current_x_val of Array.from(x_vals).sort()) {
-            x.push(current_x_val);
+          for (current_x_val of xvals_sorted) {
+            if (current_x_val.startsWith('_dx')) {
+              x.push(current_x_val.slice(4)); // hack for sorting
+            }
+            else {
+              x.push(current_x_val);
+            }
             y.push(counts[current_feature_val][current_x_val]);
           }
           converted.push({
@@ -437,9 +443,15 @@ var
         converted = [];
         for (var current_feature_val of sorted_keys(counts)) {
           if (counts[current_feature_val].length > 0) {
+            if (current_feature_val.startsWith('_dx')) {
+              label = current_feature_val.slice(4);
+            }
+            else {
+              label = current_feature_val;
+            }
             converted.push({
               x: counts[current_feature_val],
-              name: current_feature_val,
+              name: label,
               type: 'histogram'
             });
           }
@@ -455,6 +467,7 @@ var
           continue;
         }
         counts = {}
+        x_vals = new Set();
         for (row in g['data']['data']) {
           feature_val = g['data']['data'][row][feature];
           x_val = g['data']['data'][row][col];
@@ -463,6 +476,7 @@ var
             continue;
           }
 
+          x_vals.add(x_val)
           if (!(x_val in counts)) {
             counts[x_val] = []
           }
@@ -470,10 +484,17 @@ var
         }
         // convert to traces - one trace per feature
         converted = [];
-        for (var current_x_val of sorted_keys(counts)) {
-          converted.push({
+        xvals_sorted = Array.from(x_vals).sort();
+        for (var current_x_val of xvals_sorted) {
+           if (current_x_val.startsWith('_dx')) {
+             x = current_x_val.slice(4); // hack for sorting
+           }
+           else {
+             x = current_x_val;
+           }
+           converted.push({
             y: counts[current_x_val],
-            name: current_x_val,
+            name: x,
             type: 'box',
             boxpoints: 'Outliers'
           });
@@ -914,6 +935,7 @@ var
             showarrow: false,
             font: { color: 'white' }
           });
+          console.log(result['xs'][x] + ' ' + result['xs'][y] + ' ' + result['cs'][x][y] + ' ' + result['zs'][x][y]);
         }
       }
 

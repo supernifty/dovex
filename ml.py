@@ -313,6 +313,9 @@ def tsne(data_fh, config):
     projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), n_iter=300)
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['tsne'])
 
+def is_empty(x):
+  return x in ('', 'NA')
+
 def correlation(data_fh, config):
     '''
         calculate correlation as a p-value of each feature
@@ -366,7 +369,7 @@ def correlation(data_fh, config):
                     observed = collections.defaultdict(int)
                     expected = {}
                     for idx, _ in enumerate(data[x]):
-                      if data[x][idx] == '' or data[y][idx] == '': # skip if either are empty
+                      if is_empty(data[x][idx]) or is_empty(data[y][idx]): # skip if either are empty
                         continue
                       key = (data[x][idx], data[y][idx])
                       observed[key] += 1
@@ -381,7 +384,7 @@ def correlation(data_fh, config):
                     v1s = []
                     v2s = []
                     for idx, _ in enumerate(data[x]):
-                      if data[x][idx] == '' or data[y][idx] == '': # skip if either are empty
+                      if is_empty(data[x][idx]) or is_empty(data[y][idx]): # skip if either are empty
                         continue
                       v1s.append(float(data[x][idx]))
                       v2s.append(float(data[y][idx]))
@@ -393,13 +396,13 @@ def correlation(data_fh, config):
                 else: # one categorical - anova
                     groups = collections.defaultdict(list)
                     for idx, _ in enumerate(data[x]):
-                      if data[x][idx] == '' or data[y][idx] == '': # skip if either are empty
+                      if is_empty(data[x][idx]) or is_empty(data[y][idx]): # skip if either are empty
                         continue
                       if x in categorical_col_names:
                         groups[data[x][idx]].append(float(data[y][idx]))
                       else:
                         groups[data[y][idx]].append(float(data[x][idx]))
-                    current_cs.append(sum([len(g) for g in groups]))
+                    current_cs.append(sum([len(groups[g]) for g in groups]))
                     if len(groups) > 1:
                       pvalue = scipy.stats.f_oneway(*[groups[k] for k in groups])[1]
                       if math.isnan(pvalue): # if all values the same
