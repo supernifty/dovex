@@ -318,6 +318,7 @@ def correlation(data_fh, config):
         calculate correlation as a p-value of each feature
     '''
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
+    #exclude_missing = int(config['x_exclude']) > 0
     categorical_cols = set([i for i, x in enumerate(json.loads(config['datatype'])) if x == 'categorical'])
     delimiter = util.choose_delimiter(data_fh)
     meta = {}
@@ -331,10 +332,12 @@ def correlation(data_fh, config):
             continue
         if len(row) == 0: # skip empty lines
             continue
-        if row[0].startswith('#'):
+        if row[0].startswith('#'): # comment
             continue
         for idx, cell in enumerate(row): # each col
-            if idx not in y_exclude:
+            #if exclude_missing and cell == '':
+            #  continue
+            if idx not in y_exclude: # row index to exclude
                 colname = meta['header'][idx]
                 data[colname].append(cell)
                 if idx in categorical_cols: # count categorical
@@ -346,26 +349,30 @@ def correlation(data_fh, config):
 
     # calculate p-values
     xs = []
+    cs = []
     zs = []
     categorical_col_names = set([meta['header'][i] for i in categorical_cols])
     for x in sorted(data.keys()): # x is colname
         xs.append(x)
         current = []
+        current_cs = []
         for y in sorted(data.keys()): # y is colname
             if x == y:
               current.append(0)
+              current_cs.append(0)
             else:
               try:
                 if x in categorical_col_names and y in categorical_col_names: # chi-square
                     observed = collections.defaultdict(int)
                     expected = {}
                     for idx, _ in enumerate(data[x]):
-                      if data[x][idx] == '' or data[y][idx] == '':
+                      if data[x][idx] == '' or data[y][idx] == '': # skip if either are empty
                         continue
                       key = (data[x][idx], data[y][idx])
                       observed[key] += 1
   
                     total_observed = sum([observed[key] for key in observed])
+                    current_cs.append(total_observed)
                     if total_observed > 0:
                       pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [counts[x][key[0]] * counts[y][key[1]] / total_observed for key in sorted(observed.keys())])[1]
                     else:
@@ -374,10 +381,11 @@ def correlation(data_fh, config):
                     v1s = []
                     v2s = []
                     for idx, _ in enumerate(data[x]):
-                      if data[x][idx] == '' or data[y][idx] == '':
+                      if data[x][idx] == '' or data[y][idx] == '': # skip if either are empty
                         continue
                       v1s.append(float(data[x][idx]))
                       v2s.append(float(data[y][idx]))
+                    current_cs.append(len(v1s))
                     if len(v1s) > 1 and len(v2s) > 1:
                       pvalue = scipy.stats.pearsonr(v1s, v2s)[1]
                     else:
@@ -385,12 +393,13 @@ def correlation(data_fh, config):
                 else: # one categorical - anova
                     groups = collections.defaultdict(list)
                     for idx, _ in enumerate(data[x]):
-                      if data[x][idx] == '' or data[y][idx] == '':
+                      if data[x][idx] == '' or data[y][idx] == '': # skip if either are empty
                         continue
                       if x in categorical_col_names:
                         groups[data[x][idx]].append(float(data[y][idx]))
                       else:
                         groups[data[y][idx]].append(float(data[x][idx]))
+                    current_cs.append(sum([len(g) for g in groups]))
                     if len(groups) > 1:
                       pvalue = scipy.stats.f_oneway(*[groups[k] for k in groups])[1]
                       if math.isnan(pvalue): # if all values the same
@@ -403,7 +412,8 @@ def correlation(data_fh, config):
                 pvalue = -1
               current.append(pvalue)
         zs.append(current)
-    return {'xs': xs, 'zs': zs}
+        cs.append(current_cs)
+    return {'xs': xs, 'zs': zs, 'cs': cs}
 
 METHODS = {
     'logistic': logistic_regression,

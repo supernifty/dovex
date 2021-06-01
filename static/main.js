@@ -886,124 +886,6 @@ var
     }
   },
 
-  pearson_correlation = function(x, y) {
-    var ab = 0, a2 = 0, b2 = 0, xval, yval,
-      xmean = g['summary']['columns'][x]['sum'] / g['summary']['columns'][x]['count'];
-      ymean = g['summary']['columns'][y]['sum'] / g['summary']['columns'][y]['count'];
-      n = g['data']['data'].length;
-    for (var row in g['data']['data']) {
-      xval = g['data']['data'][row][x];
-      yval= g['data']['data'][row][y];
-      ab += (xval - xmean) * (yval - ymean);
-      a2 += Math.pow(xval - xmean, 2);
-      b2 += Math.pow(yval - ymean, 2);
-    }
-    var r = ab / (Math.sqrt(a2) * Math.sqrt(b2)),
-      t = r * Math.sqrt(n-2) / Math.sqrt(1 - r * r),
-      p = jStat.ttest( t, n, 2);
-
-    return {
-      'r': r,
-      't': t,
-      'p': p
-    };
-  },
-
-  chi_square = function(x, y) {
-    var observed = {}, xc, yc, totalx = {}, totaly = {}, included = 0;
-    // calculate observed
-    for (var row in g['data']['data']) {
-      xc = g['data']['data'][row][x];
-      yc = g['data']['data'][row][y];
-      if (xc == '' || yc == '') {
-        continue;
-      }
-      if (!(xc in observed)) {
-        observed[xc] = {};
-      }
-      if (!(yc in observed[xc])) {
-        observed[xc][yc] = 0;
-      }
-      observed[xc][yc] += 1;
-      if (!(xc in totalx)) {
-        totalx[xc] = 0;
-      }
-      if (!(yc in totaly)) {
-        totaly[yc] = 0;
-      }
-      totalx[xc] += 1;
-      totaly[yc] += 1;
-      included += 1;
-    }
-
-    if (included == 0) {
-      return { 'error': 'No data'};
-    }
-
-    // compare to expected
-    var statistic = 0, expected, observe;
-    for (var xc in g['summary']['columns'][x]['distinct']) {
-      if (xc == '') {
-        continue;
-      }
-      for (var yc in g['summary']['columns'][y]['distinct']) {
-        if (yc == '') {
-          continue;
-        }
-        if (!(xc in totalx) || !(yc in totaly)) {
-          // can't calculate
-          return {'error': 'Insufficient data for ' + xc + ',' + yc}
-        }
-        expected = totalx[xc] * totaly[yc] / included;
-        if (expected < 5) {
-          // can't calculate
-          return {'error': 'Insufficient data for ' + xc + ',' + yc}
-        }
-        if (xc in observed && yc in observed[xc]) {
-          observe = observed[xc][yc];
-        }
-        else {
-          observe = 0;
-        }
-        statistic += Math.pow(observe - expected, 2) / expected;
-      }
-    }
-    var
-      df = (Object.keys(totalx).length - 1) * (Object.keys(totaly).length - 1),
-      p = 1 - jStat.chisquare.cdf(statistic, df);
-
-    return {
-      'r': statistic,
-      'df': df,
-      'p': p
-    };
-  },
-
-  anova = function(cat, num) {
-    // build arrays of values
-    var vals = {};
-    for (var row in g['data']['data']) {
-      xc = g['data']['data'][row][cat];
-      yc = g['data']['data'][row][num];
-      if (xc == '' || yc == '') {
-        continue;
-      }
-      if (!(xc in vals)) {
-        vals[xc] = [];
-      }
-      vals[xc].push(parseFloat(yc));
-    }
-    var p = jStat.anovaftest.apply(null, Object.values(vals));
-    if (isNaN(p)) {
-      return {
-        'error': 'Failed to calculate ANOVA'
-      }
-    }
-    return {
-      'p': p
-    }
-  },
-
   show_correlation = function() {
     if (!g['correlation_ok']) {
       var server = ml['correlation']();
@@ -1025,7 +907,7 @@ var
             xref: 'x1', yref: 'y1',
             x: result['xs'][x], 
             y: result['xs'][y],
-            text: Math.round(result['zs'][x][y] * 100) / 100,
+            text: Math.round(result['zs'][x][y] * 100) / 100 + '<br><sup>n=' + result['cs'][x][y] + "</sup>",
             font: { family: 'Arial', size: 12, color: 'rgb(50, 171, 96)' },
             showarrow: false,
             font: { color: 'white' }

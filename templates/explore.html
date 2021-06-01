@@ -177,14 +177,18 @@
 
       </div> <!-- relationship tab -->
 
-      <!--  correlation -->
+      <!--  correlation tab -->
       <div class="tab-pane" id="tab_correlation">
-        <div class="row">
-          <div class="col-md-12">
-            <div id="correlation"></div>
-          </div>
-        </div>
-        <div class="row">
+
+      <!-- graph -->
+      <div class="row">
+         <div class="col-md-12">
+           <div id="correlation"></div>
+         </div>
+      </div>
+
+      <!-- notes -->
+      <div class="row">
           <div class="col-md-12">
             <p>This heatmap indicates a p-value in which the null hypothesis is that the two columns are independent and not correlated.
               <ul>
@@ -201,12 +205,15 @@
                 <li><strong>Categorical vs Numeric:</strong> ANOVA</li>
               </ul>
             </p>
+            <p>
+              Missing values are excluded from the p-value calculations.
+            </p>
           </div>
         </div>
       </div>
 
-      <!--  cluster -->
-         <div class="tab-pane" id="tab_cluster">
+     <!--  cluster tab -->
+     <div class="tab-pane" id="tab_cluster">
 
        <div class="row">
           <div class="col-md-3">
