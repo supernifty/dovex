@@ -471,9 +471,9 @@ def correlation_subgroup(data_fh, config):
                 pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys()) if key[0] == s1 or key[0] == s2], [counts[x][key[0]] * counts[y][key[1]] / total_observed for key in sorted(observed.keys()) if key[0] == s1 or key[0] == s2])[1]
               else:
                 pvalue = 1
-              result.append((s1, s2, pvalue, total_observed, 'Chi-square'))
+              result.append((s1, s2, pvalue, total_observed, '-', '-', 'Chi-square'))
 
-        elif x in y_include_1 and y in y_include_2 and (x in categorical_col_names or y in categorical_col_names): # anova
+        elif x in y_include_1 and y in y_include_2 and (x in categorical_col_names or y in categorical_col_names): # t-tests
           groups = collections.defaultdict(list)
           subgroups = set()
           for idx, _ in enumerate(data[x]):
@@ -494,7 +494,7 @@ def correlation_subgroup(data_fh, config):
               pvalue = scipy.stats.ttest_ind(groups[s1], groups[s2])[1]
               if math.isnan(pvalue): # if all values the same
                 pvalue = 1
-              result.append((s1, s2, pvalue, len(groups[s1]) + len(groups[s2]), 't-test'))
+              result.append((s1, s2, pvalue, len(groups[s1]) + len(groups[s2]), np.mean(groups[s1]), np.mean(groups[s2]), 't-test'))
 
  
         else: # not applicable chi-square

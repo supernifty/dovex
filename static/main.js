@@ -930,7 +930,7 @@ var
     // now generate table
     $('#correlation_detail_modal').modal('show');
     $("#table_correlation_detail").empty();
-    $("#table_correlation_detail").append('<thead><th>Category 1</th><th>Category 2</th><th>p-value</th><th>n</th><th>Test</th></tr></thead>');
+    $("#table_correlation_detail").append('<thead><th>Category 1</th><th>Category 2</th><th>p-value</th><th>n</th><th>Mean 1</th><th>Mean 2</th><th>Test</th></tr></thead>');
 
     $('#table_correlation_detail').DataTable({
       "destroy": true,
@@ -939,7 +939,9 @@ var
       "pageLength": 50,
       "data": result["result"],
       "columnDefs": [
-        { "targets": 2, "render": function ( data, type, full, meta ) { return data.toPrecision(6); } }
+        { "targets": 2, "render": function ( data, type, full, meta ) { return data.toPrecision(3); } },
+        { "targets": 4, "render": function ( data, type, full, meta ) { if (data == '-') { return data } else { return data.toPrecision(3); } } },
+        { "targets": 5, "render": function ( data, type, full, meta ) { if (data == '-') { return data } else { return data.toPrecision(3); } } }
       ]
     });
 
