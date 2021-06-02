@@ -939,6 +939,8 @@ var
       "pageLength": 50,
       "data": result["result"],
       "columnDefs": [
+        { "targets": 0, "render": function ( data, type, full, meta ) { if (data.startsWith('_dx')) { return data.slice(4) } else { return data } } },
+        { "targets": 1, "render": function ( data, type, full, meta ) { if (data.startsWith('_dx')) { return data.slice(4) } else { return data } } },
         { "targets": 2, "render": function ( data, type, full, meta ) { return data.toPrecision(3); } },
         { "targets": 4, "render": function ( data, type, full, meta ) { if (data == '-') { return data } else { return data.toPrecision(3); } } },
         { "targets": 5, "render": function ( data, type, full, meta ) { if (data == '-') { return data } else { return data.toPrecision(3); } } }
