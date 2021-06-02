@@ -361,6 +361,9 @@ var
             }
             y.push(counts[current_feature_val][current_x_val]);
           }
+          if (current_feature_val.startsWith('_dx')) {
+            current_feature_val = current_feature_val.slice(4);
+          }
           converted.push({
             x: x,
             y: y,
@@ -917,7 +920,36 @@ var
     }
   },
 
+  show_correlation_subgroup = function(covariate1, covariate2) {
+      var server = ml['correlation_subgroup']();
+      // $('#correlation').html('<div class="alert alert-info">Please wait while we calculate p-values...</div>')
+      server.fit(g['data']['data'], covariate1, covariate2, g['excluded_cols'], g['data']['meta']['datatype'], null, null, correlation_subgroup_callback, correlation_callback_error, '');
+  }
+
+  correlation_subgroup_callback = function(result) {
+    // now generate table
+    $('#correlation_detail_modal').modal('show');
+    $("#table_correlation_detail").empty();
+    $("#table_correlation_detail").append('<thead><th>Category 1</th><th>Category 2</th><th>p-value</th><th>n</th><th>Test</th></tr></thead>');
+
+    $('#table_correlation_detail').DataTable({
+      "destroy": true,
+      "order": [[ 0, "asc" ]],
+      "bInfo" : false,
+      "pageLength": 50,
+      "data": result["result"],
+      "columnDefs": [
+        { "targets": 2, "render": function ( data, type, full, meta ) { return data.toPrecision(6); } }
+      ]
+    });
+
+    $('#correlation_detail_label').html('Individual comparison between categories');
+  
+  }
+ 
   correlation_callback = function(result) {
+      var table_data = [];
+
       $('#correlation').html('')
       Plotly.purge(document.getElementById("correlation"));
       var data = [{ x: result['xs'], y: result['xs'], z: result['zs'], type: 'heatmap', showscale: true, colorscale: 'RdBu' }],
@@ -935,7 +967,9 @@ var
             showarrow: false,
             font: { color: 'white' }
           });
-          console.log(result['xs'][x] + ' ' + result['xs'][y] + ' ' + result['cs'][x][y] + ' ' + result['zs'][x][y]);
+          if (x != y) {
+            table_data.push([result['xs'][x], result['xs'][y], result['cs'][x][y], result['zs'][x][y], result['ts'][x][y]]);
+          }
         }
       }
 
@@ -948,6 +982,23 @@ var
         annotations: annotations
       };
       Plotly.newPlot('correlation', data, layout);
+
+      // now generate table
+      $("#table_correlation").empty();
+      $("#table_correlation").append('<thead><tr><th>Covariate 1</th><th>Covariate 2</th><th>n</th><th>p-value</th><th>Test</th></tr></thead>');
+
+      $('#table_correlation').DataTable({
+        "destroy": true,
+        "order": [[ 0, "asc" ]],
+        "bInfo" : false,
+        "pageLength": 50,
+        "data": table_data,
+        "columnDefs": [
+          { "targets": 3, "render": function ( data, type, full, meta ) { return data.toPrecision(6); } }, 
+          { "targets": 4, "render": function(data, type, full, meta) { if (data == 'Chi-square' || data == 'ANOVA') { return data + " <a onclick='show_correlation_subgroup(\"" + full[0] + "\", \"" + full[1] + "\")'>details...</a>"; } else { return data } } }
+        ]
+      });
+ 
       g['correlation_ok'] = true;
   },
 

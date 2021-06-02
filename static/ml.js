@@ -17,7 +17,8 @@ var
     'tsne': function() { return server_side_predictor('tsne', 'reduce', 't-SNE'); },
 
     // correlation
-    'correlation': function() { return server_side_predictor('correlation', 'reduce', 'correlation'); }
+    'correlation': function() { return server_side_predictor('correlation', 'reduce', 'correlation'); },
+    'correlation_subgroup': function() { return server_side_predictor('correlation_subgroup', 'reduce', 'correlation_subgroup'); }
   },
 
   server_side_predictor = function(method, datatype, name) {

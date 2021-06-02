@@ -316,12 +316,8 @@ def tsne(data_fh, config):
 def is_empty(x):
   return x in ('', 'NA')
 
-def correlation(data_fh, config):
-    '''
-        calculate correlation as a p-value of each feature
-    '''
+def prep_correlation(data_fh, config):
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
-    #exclude_missing = int(config['x_exclude']) > 0
     categorical_cols = set([i for i, x in enumerate(json.loads(config['datatype'])) if x == 'categorical'])
     delimiter = util.choose_delimiter(data_fh)
     meta = {}
@@ -340,7 +336,7 @@ def correlation(data_fh, config):
         for idx, cell in enumerate(row): # each col
             #if exclude_missing and cell == '':
             #  continue
-            if idx not in y_exclude: # row index to exclude
+            if y_exclude is not None and idx not in y_exclude: # row index to exclude
                 colname = meta['header'][idx]
                 data[colname].append(cell)
                 if idx in categorical_cols: # count categorical
@@ -349,20 +345,30 @@ def correlation(data_fh, config):
                   if cell not in counts[colname]:
                     counts[colname][cell] = 0
                   counts[colname][cell] += 1
+    return data, counts, meta, categorical_cols
+
+def correlation(data_fh, config, with_detail=False):
+    '''
+        calculate correlation as a p-value of each feature
+    '''
+    data, counts, meta, categorical_cols = prep_correlation(data_fh, config)
 
     # calculate p-values
     xs = []
     cs = []
+    ts = []
     zs = []
     categorical_col_names = set([meta['header'][i] for i in categorical_cols])
     for x in sorted(data.keys()): # x is colname
         xs.append(x)
         current = []
         current_cs = []
+        current_ts = []
         for y in sorted(data.keys()): # y is colname
             if x == y:
               current.append(0)
               current_cs.append(0)
+              current_ts.append('N/A')
             else:
               try:
                 if x in categorical_col_names and y in categorical_col_names: # chi-square
@@ -376,6 +382,7 @@ def correlation(data_fh, config):
   
                     total_observed = sum([observed[key] for key in observed])
                     current_cs.append(total_observed)
+                    current_ts.append('Chi-square')
                     if total_observed > 0:
                       pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [counts[x][key[0]] * counts[y][key[1]] / total_observed for key in sorted(observed.keys())])[1]
                     else:
@@ -389,6 +396,7 @@ def correlation(data_fh, config):
                       v1s.append(float(data[x][idx]))
                       v2s.append(float(data[y][idx]))
                     current_cs.append(len(v1s))
+                    current_ts.append('Pearson correlation')
                     if len(v1s) > 1 and len(v2s) > 1:
                       pvalue = scipy.stats.pearsonr(v1s, v2s)[1]
                     else:
@@ -403,6 +411,7 @@ def correlation(data_fh, config):
                       else:
                         groups[data[y][idx]].append(float(data[x][idx]))
                     current_cs.append(sum([len(groups[g]) for g in groups]))
+                    current_ts.append('ANOVA')
                     if len(groups) > 1:
                       pvalue = scipy.stats.f_oneway(*[groups[k] for k in groups])[1]
                       if math.isnan(pvalue): # if all values the same
@@ -416,7 +425,81 @@ def correlation(data_fh, config):
               current.append(pvalue)
         zs.append(current)
         cs.append(current_cs)
-    return {'xs': xs, 'zs': zs, 'cs': cs}
+        ts.append(current_ts)
+    # xs: [cov1 cov2 cov3]
+    # zs: [[pv11 pv12 pv13], [pv21 pv22 pv23]...]]
+    # cs: [[n11 n12 n13], [n21 n22 n23]...]]
+    # ts: [[t11 t12 t13], [t21 t22 t23]...]]
+    return {'xs': xs, 'zs': zs, 'cs': cs, 'ts': ts}
+
+def correlation_subgroup(data_fh, config):
+  '''
+    for anova or chi-square do individual breakdowns
+  '''
+  data, counts, meta, categorical_cols = prep_correlation(data_fh, config)
+  # calculate p-values
+  result = []
+  categorical_col_names = set([meta['header'][i] for i in categorical_cols])
+  y_include_1 = config['x_exclude'] # straight out column name
+  y_include_2 = config['y_predict'] # straight out column name
+  added = set()
+  for x in sorted(data.keys()): # x is colname
+    for y in sorted(data.keys()): # y is colname
+      if x == y:
+        continue
+      else:
+        if x in y_include_1 and y in y_include_2 and x in categorical_col_names and y in categorical_col_names: # chi-square
+          observed = collections.defaultdict(int)
+          expected = {}
+
+          subgroups = set()
+          # counts of each combination
+          for idx, _ in enumerate(data[x]):
+            if is_empty(data[x][idx]) or is_empty(data[y][idx]): # skip if either are empty
+              continue
+            key = (data[x][idx], data[y][idx])
+            observed[key] += 1
+            subgroups.add(data[x][idx]) # category of primary covariate
+
+          for s1 in subgroups:
+            for s2 in subgroups:
+              if s1 == s2 or (s2, s1) in added:
+                continue
+              added.add((s1, s2))
+              total_observed = sum([observed[key] for key in observed if key[0] == s1 or key[0] == s2])
+              if total_observed > 0:
+                pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys()) if key[0] == s1 or key[0] == s2], [counts[x][key[0]] * counts[y][key[1]] / total_observed for key in sorted(observed.keys()) if key[0] == s1 or key[0] == s2])[1]
+              else:
+                pvalue = 1
+              result.append((s1, s2, pvalue, total_observed, 'Chi-square'))
+
+        elif x in y_include_1 and y in y_include_2 and (x in categorical_col_names or y in categorical_col_names): # anova
+          groups = collections.defaultdict(list)
+          subgroups = set()
+          for idx, _ in enumerate(data[x]):
+            if is_empty(data[x][idx]) or is_empty(data[y][idx]): # skip if either are empty
+              continue
+            if x in categorical_col_names:
+              groups[data[x][idx]].append(float(data[y][idx]))
+              subgroups.add(data[x][idx])
+            else:
+              groups[data[y][idx]].append(float(data[x][idx]))
+              subgroups.add(data[y][idx])
+
+          for s1 in subgroups:
+            for s2 in subgroups:
+              if s1 == s2 or (s2, s1) in added:
+                continue
+              added.add((s1, s2))
+              pvalue = scipy.stats.ttest_ind(groups[s1], groups[s2])[1]
+              if math.isnan(pvalue): # if all values the same
+                pvalue = 1
+              result.append((s1, s2, pvalue, len(groups[s1]) + len(groups[s2]), 't-test'))
+
+ 
+        else: # not applicable chi-square
+          pass 
+  return {'result': result}
 
 METHODS = {
     'logistic': logistic_regression,
@@ -427,5 +510,6 @@ METHODS = {
     'pca': pca,
     'mds': mds,
     'tsne': tsne,
-    'correlation': correlation
+    'correlation': correlation,
+    'correlation_subgroup': correlation_subgroup
 }
