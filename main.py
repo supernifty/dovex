@@ -4,6 +4,7 @@
 '''
 
 import csv
+import io
 import os
 import re
 import urllib
@@ -13,6 +14,7 @@ import pandas as pd
 import numpy as np
 from pandas.core.dtypes.common import infer_dtype_from_object
 
+import boto3
 import flask
 
 import ml
@@ -29,7 +31,7 @@ parser.add_argument('--missingness', dest='missingness', action='store_true',
 args = parser.parse_args()
 
 app = flask.Flask(__name__, template_folder='templates')
-app.config.from_pyfile('config.py')
+app.config.from_pyfile('config.local.py')
 app.secret_key = 'ducks in space'
 app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 
@@ -43,30 +45,44 @@ def main():
         if 'file' not in flask.request.files:
             flask.abort(400, 'No file part')
             return flask.redirect(flask.request.url)
-        file = flask.request.files['file']
+        data = flask.request.files['file']
         # if user does not select file, browser also
         # submit a empty part without filename
-        if file.filename == '':
+        if data.filename == '':
             flask.abort(400, 'No selected file')
             return flask.redirect(flask.request.url)
-        if file:
+        if data:
             filename = str(uuid.uuid4())
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            write(data, filename)
             # process file
             return flask.redirect(flask.url_for('explore', filename=filename))
     return flask.render_template('main.html')
 
 
-def get_fh(filename):
+def write(data, filename):
+    if app.config['AWS']:
+      s3 = boto3.client('s3', aws_access_key_id=app.config['AWS_ACCESS'], aws_secret_access_key=app.config['AWS_SECRET'])
+      s3.upload_fileobj(data, app.config['AWS_BUCKET'], filename)
+    else:
+      data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+def read(filename):
     '''
         opens specified filehandle
         currently only supports files
     '''
-    if filename.startswith('url='):
-        return urllib.urlopen(filename[4:])
+    if app.config['AWS']:
+      if filename.startswith('url='):
+        filename = filename[4:]
+      s3 = boto3.client('s3', aws_access_key_id=app.config['AWS_ACCESS'], aws_secret_access_key=app.config['AWS_SECRET'])
+      s3_object = s3.get_object(Bucket=app.config['AWS_BUCKET'], Key=filename)
+      return io.StringIO(s3_object['Body'].read().decode('utf-8'))
     else:
+      if filename.startswith('url='):
+        return urllib.urlopen(filename[4:])
+      else:
         if re.match(r'^[\w.-]+$', filename) is None:
-            raise FileNotFoundError
+          raise FileNotFoundError
         return open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
 def matches_dtypes(df, dtypes):
@@ -133,7 +149,7 @@ def json_data(filename):
         lines = 0
         datatype_row = None
 
-        with get_fh(filename) as data_fh:
+        with read(filename) as data_fh:
             df = pd.read_csv(data_fh, header=0, sep=util.choose_delimiter(data_fh))
 
         if str(df.iloc[0,0])[0]=='#':
@@ -187,7 +203,7 @@ def process(filename):
     try:
         method = flask.request.form['method']
         if method in ml.METHODS:
-            result = ml.METHODS[method](get_fh(filename), flask.request.form)
+            result = ml.METHODS[method](read(filename), flask.request.form)
             return flask.jsonify(result=result)
         else:
             flask.abort(404, 'method not found')

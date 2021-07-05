@@ -972,7 +972,7 @@ var
             font: { color: 'white' }
           });
           if (x != y) {
-            table_data.push([result['xs'][x], result['xs'][y], result['cs'][x][y], result['zs'][x][y], result['ts'][x][y]]);
+            table_data.push([result['xs'][x], result['xs'][y], result['cs'][x][y], result['zs'][x][y], result['ts'][x][y], result['ds'][x][y]]);
           }
         }
       }
@@ -999,7 +999,7 @@ var
         "data": table_data,
         "columnDefs": [
           { "targets": 3, "render": function ( data, type, full, meta ) { return data.toPrecision(6); } }, 
-          { "targets": 4, "render": function(data, type, full, meta) { if (data == 'Chi-square' || data == 'ANOVA') { return data + " <a onclick='show_correlation_subgroup(\"" + full[0] + "\", \"" + full[1] + "\")'>details...</a>"; } else { return data } } }
+          { "targets": 4, "render": function(data, type, full, meta) { if (data == 'Chi-square' || data == 'ANOVA') { return "<a href='#' data-toggle='tooltip' title='" + full[5] + "'>" + data + "</a> <a onclick='show_correlation_subgroup(\"" + full[0] + "\", \"" + full[1] + "\")'>details...</a>"; } else { return data } } }
         ]
       });
  
@@ -1096,6 +1096,9 @@ var
       else if (target == '#tab_cluster') {
         change_reducer();
       }
+    });
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip()
     });
   },
 

@@ -356,6 +356,7 @@ def correlation(data_fh, config, with_detail=False):
     # calculate p-values
     xs = []
     cs = []
+    ds = []
     ts = []
     zs = []
     categorical_col_names = set([meta['header'][i] for i in categorical_cols])
@@ -364,11 +365,13 @@ def correlation(data_fh, config, with_detail=False):
         current = []
         current_cs = []
         current_ts = []
+        current_ds = [] # details
         for y in sorted(data.keys()): # y is colname
             if x == y:
               current.append(0)
               current_cs.append(0)
               current_ts.append('N/A')
+              current_ds.append('N/A')
             else:
               try:
                 if x in categorical_col_names and y in categorical_col_names: # chi-square
@@ -385,8 +388,10 @@ def correlation(data_fh, config, with_detail=False):
                     current_ts.append('Chi-square')
                     if total_observed > 0:
                       pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [counts[x][key[0]] * counts[y][key[1]] / total_observed for key in sorted(observed.keys())])[1]
+                      current_ds.append(' '.join(['{}/{}={}'.format(key[0], key[1], observed[key]) for key in sorted(observed.keys())]))
                     else:
                       pvalue = 1
+                      current_ds.append('N/A')
                 elif x not in categorical_col_names and y not in categorical_col_names: # both numeric: pearson correlation
                     v1s = []
                     v2s = []
@@ -397,6 +402,7 @@ def correlation(data_fh, config, with_detail=False):
                       v2s.append(float(data[y][idx]))
                     current_cs.append(len(v1s))
                     current_ts.append('Pearson correlation')
+                    current_ds.append('N/A')
                     if len(v1s) > 1 and len(v2s) > 1:
                       pvalue = scipy.stats.pearsonr(v1s, v2s)[1]
                     else:
@@ -412,6 +418,7 @@ def correlation(data_fh, config, with_detail=False):
                         groups[data[y][idx]].append(float(data[x][idx]))
                     current_cs.append(sum([len(groups[g]) for g in groups]))
                     current_ts.append('ANOVA')
+                    current_ds.append('N/A')
                     if len(groups) > 1:
                       pvalue = scipy.stats.f_oneway(*[groups[k] for k in groups])[1]
                       if math.isnan(pvalue): # if all values the same
@@ -425,12 +432,13 @@ def correlation(data_fh, config, with_detail=False):
               current.append(pvalue)
         zs.append(current)
         cs.append(current_cs)
+        ds.append(current_ds)
         ts.append(current_ts)
     # xs: [cov1 cov2 cov3]
     # zs: [[pv11 pv12 pv13], [pv21 pv22 pv23]...]]
     # cs: [[n11 n12 n13], [n21 n22 n23]...]]
     # ts: [[t11 t12 t13], [t21 t22 t23]...]]
-    return {'xs': xs, 'zs': zs, 'cs': cs, 'ts': ts}
+    return {'xs': xs, 'zs': zs, 'cs': cs, 'ts': ts, 'ds': ds}
 
 def correlation_subgroup(data_fh, config):
   '''
