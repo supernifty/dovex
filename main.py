@@ -24,11 +24,7 @@ import util
 #import plotly.graph_objs as go
 #import pandas as pd
 
-# arguments are currently used only to make missingness optional
-parser = argparse.ArgumentParser()
-parser.add_argument('--missingness', dest='missingness', action='store_true',
-                    help='create extra variables corresponding to missingness of variables')
-args = parser.parse_args()
+MISSINGNESS=False
 
 app = flask.Flask(__name__, template_folder='templates')
 app.config.from_pyfile('config.local.py')
@@ -134,6 +130,15 @@ def guess_datatypes(df, known_datatypes=None):
     return datatypes
 
 
+@app.route('/config/<filename>')
+def config(filename):
+    '''
+        store configuration options for this dataset
+    '''
+    # TODO
+    flask.abort(404)
+    
+
 @app.route('/data/<filename>')
 def json_data(filename):
     '''
@@ -145,10 +150,11 @@ def json_data(filename):
     '''
     try:
         meta = {}
+
+        # read datasest
         data = []
         lines = 0
         datatype_row = None
-
         with read(filename) as data_fh:
             df = pd.read_csv(data_fh, header=0, sep=util.choose_delimiter(data_fh))
 
@@ -159,13 +165,15 @@ def json_data(filename):
         else:
             datatype_row = None
 
+        # metadata derived from the dataset
         meta['header'] = list(df.columns)
         meta['lines'] = len(df)
-
         meta['datatype'] = list(guess_datatypes(df, known_datatypes=datatype_row))
-        # TODO: if desired, set variables with missing values to categorical
 
-        if args.missingness:
+        # TODO get dataset configuration
+
+        # TODO: if desired, set variables with missing values to categorical
+        if MISSINGNESS:
             # Create a missingness variable for every variable that has missing data.
             new_fields = []
             for field in meta['header']:
