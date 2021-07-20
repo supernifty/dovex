@@ -462,7 +462,8 @@ def correlation_subgroup(data_fh, config):
       else:
         if x == y_include_1 and y == y_include_2 and x in categorical_col_names and y in categorical_col_names: # chi-square
           observed = collections.defaultdict(int)
-          expected = {}
+          expected_x = collections.defaultdict(int)
+          expected_y = collections.defaultdict(int)
 
           subgroups = set()
           # counts of each combination
@@ -472,6 +473,8 @@ def correlation_subgroup(data_fh, config):
             key = (data[x][idx], data[y][idx])
             observed[key] += 1
             subgroups.add(data[x][idx]) # category of primary covariate
+            expected_x[data[x][idx]] += 1
+            expected_y[data[y][idx]] += 1
 
           for s1 in subgroups:
             for s2 in subgroups:
@@ -480,7 +483,7 @@ def correlation_subgroup(data_fh, config):
               added.add((s1, s2))
               total_observed = sum([observed[key] for key in observed if key[0] == s1 or key[0] == s2])
               if total_observed > 0:
-                pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys()) if key[0] == s1 or key[0] == s2], [counts[x][key[0]] * counts[y][key[1]] / total_observed for key in sorted(observed.keys()) if key[0] == s1 or key[0] == s2])[1]
+                pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys()) if key[0] == s1 or key[0] == s2], [expected_x[key[0]] * expected_y[key[1]] / total_observed for key in sorted(observed.keys()) if key[0] == s1 or key[0] == s2])[1]
               else:
                 pvalue = 1
               result.append((s1, s2, pvalue, total_observed, '-', '-', '-', '-', 'Chi-square'))
