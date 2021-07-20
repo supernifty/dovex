@@ -376,18 +376,21 @@ def correlation(data_fh, config, with_detail=False):
               try:
                 if x in categorical_col_names and y in categorical_col_names: # chi-square
                     observed = collections.defaultdict(int)
-                    expected = {}
-                    for idx, _ in enumerate(data[x]):
+                    expected_x = collections.defaultdict(int)
+                    expected_y = collections.defaultdict(int)
+                    for idx, _ in enumerate(data[x]): # values from x column
                       if is_empty(data[x][idx]) or is_empty(data[y][idx]): # skip if either are empty
                         continue
                       key = (data[x][idx], data[y][idx])
                       observed[key] += 1
+                      expected_x[data[x][idx]] += 1
+                      expected_y[data[y][idx]] += 1
   
                     total_observed = sum([observed[key] for key in observed])
                     current_cs.append(total_observed)
                     current_ts.append('Chi-square')
                     if total_observed > 0:
-                      pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [counts[x][key[0]] * counts[y][key[1]] / total_observed for key in sorted(observed.keys())])[1]
+                      pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [expected_x[key[0]] * expected_y[key[1]] / total_observed for key in sorted(observed.keys())])[1]
                       current_ds.append(' '.join(['{}/{}={}'.format(key[0], key[1], observed[key]) for key in sorted(observed.keys())]))
                     else:
                       pvalue = 1
@@ -427,6 +430,7 @@ def correlation(data_fh, config, with_detail=False):
                       pvalue = 1
               except:
                 pvalue = -1 # problem
+                raise
               if math.isnan(pvalue):
                 pvalue = -1
               current.append(pvalue)
