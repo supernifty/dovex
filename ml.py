@@ -390,7 +390,9 @@ def correlation(data_fh, config, with_detail=False):
                     current_cs.append(total_observed)
                     current_ts.append('Chi-square')
                     if total_observed > 0:
-                      pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [expected_x[key[0]] * expected_y[key[1]] / total_observed for key in sorted(observed.keys())])[1]
+                      dof = (len(expected_x) - 1) * (len(expected_y) - 1) # correct dof
+                      ddof = len(observed) - 1 - dof
+                      pvalue = scipy.stats.chisquare([observed[key] for key in sorted(observed.keys())], [expected_x[key[0]] * expected_y[key[1]] / total_observed for key in sorted(observed.keys())], ddof=ddof)[1]
                       current_ds.append(' '.join(['{}/{}={}'.format(key[0], key[1], observed[key]) for key in sorted(observed.keys())]))
                     else:
                       pvalue = 1
