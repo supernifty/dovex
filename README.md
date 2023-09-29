@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/supernifty/dovex.svg?branch=master)](https://travis-ci.org/supernifty/dovex)
 
 # Dovex
-A web based tool to quickly provide an interactive overview and enable quick exploration of your dataset.
+Dovex (Data overview, visualization and exploration) is a web-based tool to quickly provide an interactive overview and enable quick exploration of your dataset.
 
 Use to identify columns of interest, explore correlations between inputs, and find problems in your input data.
 
@@ -61,10 +61,3 @@ Without specifying data types, the software will attempt to infer the datatype o
 We have included the following public domain datasets:
 * [Iris](http://archive.ics.uci.edu/ml/datasets/Iris)
 * [Forest Fires](http://archive.ics.uci.edu/ml/datasets/Forest+Fires)
-
-## Wishlist for v2
-* server side focus
-* data set management
-* row filtering tools
-* command line interface
-* think about aws serverless or scalable implementation?
