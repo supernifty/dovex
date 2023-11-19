@@ -14,7 +14,6 @@ import pandas as pd
 import numpy as np
 from pandas.core.dtypes.common import infer_dtype_from_object
 
-import boto3
 import flask
 
 import ml
@@ -56,30 +55,19 @@ def main():
 
 
 def write(data, filename):
-    if app.config['AWS']:
-      s3 = boto3.client('s3', aws_access_key_id=app.config['AWS_ACCESS'], aws_secret_access_key=app.config['AWS_SECRET'])
-      s3.upload_fileobj(data, app.config['AWS_BUCKET'], filename)
-    else:
-      data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
 def read(filename):
     '''
         opens specified filehandle
         currently only supports files
     '''
-    if app.config['AWS']:
-      if filename.startswith('url='):
-        filename = filename[4:]
-      s3 = boto3.client('s3', aws_access_key_id=app.config['AWS_ACCESS'], aws_secret_access_key=app.config['AWS_SECRET'])
-      s3_object = s3.get_object(Bucket=app.config['AWS_BUCKET'], Key=filename)
-      return io.StringIO(s3_object['Body'].read().decode('utf-8'))
+    if filename.startswith('url='):
+      return urllib.urlopen(filename[4:])
     else:
-      if filename.startswith('url='):
-        return urllib.urlopen(filename[4:])
-      else:
-        if re.match(r'^[\w.-]+$', filename) is None:
-          raise FileNotFoundError
-        return open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+      if re.match(r'^[\w.-]+$', filename) is None:
+        raise FileNotFoundError
+      return open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
 def matches_dtypes(df, dtypes):
     """
