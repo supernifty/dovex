@@ -102,7 +102,7 @@ def matches_dtypes(df, dtypes):
     """
     dtypes = list(map(infer_dtype_from_object, dtypes))
     boolean_list = [any([issubclass(coltype.type,t) for t in dtypes])
-                     for (column,coltype) in df.dtypes.iteritems()]
+                     for (column,coltype) in df.dtypes.items()]
     return pd.Series(boolean_list, index=df.columns)
 
 # Guess unknown datatypes
