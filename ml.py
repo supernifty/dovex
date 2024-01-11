@@ -385,6 +385,16 @@ def correlation(data_fh, config, with_detail=False):
                       observed[key] += 1
                       expected_x[data[x][idx]] += 1
                       expected_y[data[y][idx]] += 1
+
+                    # unobserved combinations
+                    ks = list(observed.keys())
+                    for k in ks:
+                      xkey = k[0]
+                      for l in ks:
+                        ykey = l[1]
+                        key = (xkey, ykey)
+                        if key not in observed:
+                          observed[key] = 0
   
                     total_observed = sum([observed[key] for key in observed])
                     current_cs.append(total_observed)
