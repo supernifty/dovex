@@ -488,6 +488,17 @@ def correlation_subgroup(data_fh, config):
             expected_x[data[x][idx]] += 1
             expected_y[data[y][idx]] += 1
 
+          # unobserved combinations
+          ks = list(observed.keys())
+          for k in ks: # all combinations seen
+            xkey = k[0] # came from data[x][idx]
+            for l in ks:
+              ykey = l[1]
+              key = (xkey, ykey)
+              if key not in observed:
+                #print('adding zero for {}'.format(key))
+                observed[key] = 0
+
           for s1 in subgroups:
             for s2 in subgroups:
               if s1 == s2 or (s2, s1) in added:
