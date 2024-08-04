@@ -36,7 +36,7 @@ docker run -p 5000:5000 supernifty/dovex:latest
 
 By default, the app stores uploaded datasets in the uploads directory. To persist uploaded datasets, use a mount point when starting the docker instance:
 ```
-docker run -p 5000:5000 -v /your/upload/directory:/app/uploads supernifty/dovex:latest
+docker run -p 5000:5000 -v /your/upload/directory:/app/uploads supernifty/dovex:v0.2
 ```
 
 Point your browser at http://127.0.0.1:5000/ to use the application.
