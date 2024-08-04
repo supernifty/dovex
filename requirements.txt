@@ -1,7 +1,7 @@
 boto3
 Flask
 numpy
-pandas==0.24
+pandas
 pytest
 scipy
-sklearn
+scikit-learn
