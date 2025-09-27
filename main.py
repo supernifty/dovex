@@ -174,7 +174,7 @@ def json_data(filename):
             meta['datatype'] += ['categorical']*len(new_fields)
 
         df_str = df[meta['header']].astype(str)
-        df_str[df.isnull()] = ''
+        df_str[df.isnull()] = '' # TODO??? converting NA etc to ''?
         data = [list(record) for record in df_str.to_records(index=False)]
 
         return flask.jsonify(meta=meta, data=data)

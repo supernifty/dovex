@@ -249,7 +249,7 @@ var
       if (g['data']['meta']['datatype'][col] == 'categorical') {
         // sort the keys
         for (var distinct of sorted_keys(g['summary']['columns'][col]['distinct'])) {
-           if (exclude_missing && (distinct == '' || g['summary']['columns'][col]['distinct'][distinct] == '')) {
+           if (exclude_missing && (distinct == '' || g['summary']['columns'][col]['distinct'][distinct] == '')) { // '' is not counted as a distinct item
              continue;
            }
            x.push(distinct);

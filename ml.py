@@ -23,6 +23,11 @@ import sklearn.preprocessing
 import sklearn.svm
 import sklearn.model_selection
 
+try:
+  import sklearn.impute
+except:
+  pass
+
 MAX_DISTINCT = 100
 MAX_CELLS = 1e6
 MAX_ROWS = {
@@ -65,6 +70,9 @@ def preprocess(data_fh, config):
     for lines, row in enumerate(csv.reader(data_fh, delimiter=delimiter)):
         if lines == 0:
             meta['header'] = row
+            for idx, name in enumerate(row): # TODO efficiency
+              if idx > 0 and name in row[:idx-1]: # repeated name
+                y_exclude.add(idx)
             continue
         if len(row) == 0: # skip empty lines
             continue
@@ -74,22 +82,24 @@ def preprocess(data_fh, config):
         # one hot and exclusions
         x = []
         missing = 0
-        for idx, cell in enumerate(row): # each col
+        for idx, cell in enumerate(row): # each col; idx = column index
             if idx not in y_exclude and idx != y_predict:
-                if cell == '': # missing
+                if is_empty(cell): # missing
+                    # believe pandas converts NAs to empty?
+                    cell = ''
                     missing += 1
                     if missing >= x_exclude:
-                        break # skip
+                        break # skip row
                 if idx in categorical_cols: # categorical
                     chunk = [0] * distinct[idx]
                     if cell in seen[idx]:
                         chunk[seen[idx][cell]] = 1
                     else:
-                        chunk[seen_count[idx]] = 1
+                        chunk[seen_count[idx]] = 1 # PROBLEM check length is less than seen count idx
                         seen[idx][cell] = seen_count[idx]
                         seen_count[idx] += 1
                     x.extend(chunk)
-                elif cell == '': # handle missing float
+                elif is_empty(cell): # handle missing float
                     #return {'error': 'Cannot train with missing data in numeric column {} on line {}.'.format(idx + 1, lines + 1)}
                     x.append(np.nan)
                     impute_numeric += 1
@@ -119,7 +129,10 @@ def preprocess(data_fh, config):
     # impute
     notes = []
     if impute_numeric > 0:
-        imputer = sklearn.preprocessing.Imputer(missing_values=np.nan, strategy='mean', copy=False)
+        try:
+          imputer = sklearn.preprocessing.Imputer(missing_values=np.nan, strategy='mean', copy=False)
+        except:
+          imputer = sklearn.impute.SimpleImputer(missing_values=np.nan, strategy='mean', copy=False)
         X = imputer.fit_transform(X)
         notes.append('{} missing or erroneous numeric value(s) have been imputed with the mean of that column'.format(impute_numeric))
 
@@ -314,7 +327,7 @@ def tsne(data_fh, config):
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['tsne'])
 
 def is_empty(x):
-  return x in ('', 'NA')
+  return x in ('', 'NA', 'n/a', 'N/A')
 
 def prep_correlation(data_fh, config):
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
@@ -327,7 +340,10 @@ def prep_correlation(data_fh, config):
     # read in all the data
     for lines, row in enumerate(csv.reader(data_fh, delimiter=delimiter)): # each row
         if lines == 0:
-            meta['header'] = row
+            meta['header'] = row # maps idx to colname
+            for idx, name in enumerate(row): # TODO efficiency
+              if idx > 0 and name in row[:idx-1]: # repeated name
+                y_exclude.add(idx)
             continue
         if len(row) == 0: # skip empty lines
             continue
