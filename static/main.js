@@ -1152,18 +1152,4 @@ var
     return String(string).replace(/[&<>"'`=\/]/g, function (s) {
       return ENTITY_MAP[s];
     });
-  },
-
-  // upload page functionality
-  populate_recent = function () {
-    var li = '', val = window.localStorage.getItem("recent");
-    if (val != null) {
-      val = JSON.parse(val);
-      if (val.length > 0) {
-        for (item in val) {
-          li += '<li><a href="' + val[item].url + '">' + val[item].columns + '</a>';
-        }
-        $('#recent').html('<strong>Recently Viewed Datasets</strong><ul>' + li + '</ul>');
-      }
-    }
   };

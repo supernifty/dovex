@@ -4,6 +4,7 @@
 '''
 
 import csv
+import datetime
 import io
 import os
 import re
@@ -13,6 +14,7 @@ import argparse
 import pandas as pd
 import numpy as np
 from pandas.core.dtypes.common import infer_dtype_from_object
+import sqlite3
 
 import flask
 
@@ -41,6 +43,7 @@ def main():
             flask.abort(400, 'No file part')
             return flask.redirect(flask.request.url)
         data = flask.request.files['file']
+        title = flask.request.form['title']
         # if user does not select file, browser also
         # submit a empty part without filename
         if data.filename == '':
@@ -48,14 +51,53 @@ def main():
             return flask.redirect(flask.request.url)
         if data:
             filename = str(uuid.uuid4())
-            write(data, filename)
+            write(data, filename, title=title)
             # process file
             return flask.redirect(flask.url_for('explore', filename=filename))
     return flask.render_template('main.html')
 
+@app.route('/uploads', methods=['GET'])
+def uploads():
+  db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
+  con = sqlite3.connect(db)
+  cursor = con.cursor()
+  items = []
+  for item in cursor.execute('select filename, title, created, size from dataset'):
+    items.append({'filename': item[0], 'title': item[1], 'created': item[2], 'size': item[3]})
+  return flask.render_template('uploads.html', items=items)
 
-def write(data, filename):
-    data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+@app.route('/delete/<filename>', methods=['GET'])
+def delete(filename):
+  target_fn = os.path.join(app.config['UPLOAD_FOLDER'], filename) 
+  if os.path.exists(target_fn):
+    os.remove(target_fn)
+    db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
+    con = sqlite3.connect(db)
+    cursor = con.cursor()
+    cursor.execute('delete from dataset where filename = ?', (filename,))
+    con.commit()
+  return flask.redirect(flask.url_for('uploads'))
+
+def write(data, filename, title=''):
+    # save the data
+    target_fn = os.path.join(app.config['UPLOAD_FOLDER'], filename) 
+    data.save(target_fn)
+    size = os.stat(target_fn).st_size
+
+    # save the metadata - create if not exist
+    db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
+    con = sqlite3.connect(db)    
+    cursor = con.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS dataset (
+            filename text primary key not null,
+            title text not null,
+            created text not null,
+            size integer not null)''')
+    con.commit()
+    # now insert
+    cursor.execute('insert into dataset values (?, ?, ?, ?)', (filename, title, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), size))
+    con.commit()
 
 def read(filename):
     '''
