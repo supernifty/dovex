@@ -5,7 +5,7 @@ Dovex (Data overview, visualization and exploration) is a web-based tool to quic
 
 Use to identify columns of interest, explore correlations between inputs, and find problems in your input data.
 
-Try it out by visiting [dovex.org](http://dovex.org/).
+Try it out by visiting [dovex.supernifty.org](https://dovex.supernifty.org/).
 
 ## Local Installation
 dovex has been tested on Python 3.
