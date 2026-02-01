@@ -38,15 +38,17 @@
             <li><a href="{{ url_for('show_help') }}">Help</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
+            <li>{% if current_user.is_authenticated %}<a href="{{ url_for('logout') }}">Logout {{ current_user._email }}</a>{% endif %}</li>
           </ul>
         </div>
       </div>
     </nav>
 
+{% if current_user.is_authenticated %}
     <div class="container">
         <div class="row">
           <h1>Data Overview, Visualization, and Exploration (dovex)</h1>
-          <div class="alert alert-info">Upload your dataset in CSV or TSV format.</div>
+          <div class="alert alert-info">Upload your dataset in CSV or TSV format as {{ current_user._email }}.</div>
           <form method=post enctype=multipart/form-data>
             <div class="form-group">
               <label for="file">1. Choose a file to upload</label>
@@ -76,6 +78,15 @@
           <p>Note: This app isn't designed for large data sets. If you have more than 1,000 features or more than 100,000 rows, the app may be slow.
         </div>
     </div>
+
+{% else %}
+<div class="panel-heading">Please login to continue</div>
+  <div class="panel-body">
+    <a href="{{ url_for('oauth2_authorize', provider='google') }}" class="btn btn-primary btn-lg active" role="button" aria-pressed="true">Login</a>
+  </div>
+</div>
+{% endif %}
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script src="{{ url_for('static', filename='main.js', v='171210') }}"></script>

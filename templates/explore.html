@@ -43,6 +43,7 @@
             <li><a href="{{ url_for('show_help') }}">Help</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
+            <li>{% if current_user.is_authenticated %}<a href="{{ url_for('logout') }}">Logout {{ current_user._email }}</a>{% endif %}</li>
           </ul>
         </div>
       </div>

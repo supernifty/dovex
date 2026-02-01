@@ -1,7 +1,10 @@
 boto3
 Flask
+Flask-HTTPAuth
+Flask-Login
 numpy
 pandas
 pytest
+requests
 scipy
 scikit-learn
