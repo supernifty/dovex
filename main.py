@@ -343,7 +343,7 @@ def oauth2_authorize(provider):
       return flask.redirect(flask.url_for('main')) # TODO redirect to target?
 
     if not flask_login.current_user.is_anonymous:
-        return redirect(flask.url_for(NOAUTH))
+        return flask.redirect(flask.url_for(NOAUTH))
 
     provider_data = app.config['OAUTH2_PROVIDERS'].get(provider)
     if provider_data is None:
@@ -367,7 +367,7 @@ def oauth2_authorize(provider):
 @app.route('/callback/<provider>')
 def oauth2_callback(provider):
     if not flask_login.current_user.is_anonymous:
-        return flask.redirect(url_for(NOAUTH))
+        return flask.redirect(flask.url_for(NOAUTH))
 
     provider_data = app.config['OAUTH2_PROVIDERS'].get(provider)
     if provider_data is None:
@@ -378,7 +378,7 @@ def oauth2_callback(provider):
         for k, v in flask.request.args.items():
             if k.startswith('error'):
                 flask.flash(f'{k}: {v}')
-        return redirect(flask.url_for(NOAUTH))
+        return flask.redirect(flask.url_for(NOAUTH))
 
     # make sure that the state parameter matches the one we created in the
     # authorization request
