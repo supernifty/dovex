@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/supernifty/dovex.svg?branch=master)](https://travis-ci.org/supernifty/dovex)
+[![Build status](https://github.com/supernifty/dovex/actions/workflows/python-app.yml/badge.svg)](https://github.com/supernifty/dovex/actions/workflows/python-app.yml)
 
 # Dovex
 Dovex (Data overview, visualization and exploration) is a web-based tool to quickly provide an interactive overview and enable quick exploration of your dataset.
