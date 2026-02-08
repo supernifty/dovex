@@ -140,6 +140,11 @@ def preprocess(data_fh, config):
     if 'scale' in config:
         X = sklearn.preprocessing.scale(X)
 
+    # Ensure X is always a numpy array (not a list)
+    # This is required for newer scikit-learn versions
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+
     return {'X': X, 'y_labels': y_labels, 'y': y, 'y_predict': y_predict, 'y_exclude': y_exclude, 'categorical_cols': categorical_cols, 'distinct': distinct, 'notes': notes}
 
 def evaluate(data_fh, config, learner, learner_features=None):
