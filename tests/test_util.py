@@ -4,7 +4,6 @@ Tests for util.py
 '''
 
 import io
-import pytest
 import util
 
 

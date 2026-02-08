@@ -4,7 +4,6 @@ Tests for ml.py prediction algorithms and feature extraction
 '''
 
 import io
-import pytest
 import ml
 
 

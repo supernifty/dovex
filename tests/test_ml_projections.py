@@ -4,7 +4,6 @@ Tests for ml.py dimensionality reduction and projection functions
 '''
 
 import io
-import pytest
 import ml
 
 

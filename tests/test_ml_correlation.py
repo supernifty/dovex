@@ -4,7 +4,6 @@ Tests for ml.py correlation and statistical analysis functions
 '''
 
 import io
-import pytest
 import ml
 
 
@@ -202,8 +201,7 @@ class TestCorrelationSubgroup:
         config = {
             'y_exclude': '[]',
             'x_exclude': 'Group',  # Primary variable name
-            'y_predict': 'Outcome',  # Secondary variable name
-            'y_predict': '',
+            'y_predict': '',  # Empty - not used for this analysis
             'datatype': '["categorical","categorical"]',
             'distinct': '{"0": 3, "1": 2}'
         }
@@ -218,8 +216,7 @@ class TestCorrelationSubgroup:
         config = {
             'y_exclude': '[]',
             'x_exclude': 'Group',  # Categorical variable
-            'y_predict': 'Score',  # Numeric variable
-            'y_predict': '',
+            'y_predict': '',  # Empty - not used for this analysis
             'datatype': '["categorical","numeric"]',
             'distinct': '{"0": 3}'
         }
@@ -237,7 +234,6 @@ class TestCorrelationSubgroup:
         config = {
             'y_exclude': '[]',
             'x_exclude': 'Group',
-            'y_predict': 'Score',
             'y_predict': '',
             'datatype': '["categorical","numeric"]',
             'distinct': '{"0": 2}'
@@ -258,7 +254,6 @@ class TestCorrelationSubgroup:
         config = {
             'y_exclude': '[]',
             'x_exclude': 'Group',
-            'y_predict': 'Score',
             'y_predict': '',
             'datatype': '["categorical","numeric"]',
             'distinct': '{"0": 3}'
@@ -280,7 +275,6 @@ class TestCorrelationSubgroup:
         config = {
             'y_exclude': '[]',
             'x_exclude': 'Group',
-            'y_predict': 'Score',
             'y_predict': '',
             'datatype': '["categorical","numeric"]',
             'distinct': '{"0": 2}'
@@ -296,7 +290,6 @@ class TestCorrelationSubgroup:
         config = {
             'y_exclude': '[]',
             'x_exclude': 'A',
-            'y_predict': 'B',
             'y_predict': '',
             'datatype': '["numeric","numeric"]',
             'distinct': '{}'
