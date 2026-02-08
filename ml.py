@@ -323,7 +323,12 @@ def tsne(data_fh, config):
     '''
         cluster data using tsne
     '''
-    projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), n_iter=300)
+    # max_iter replaces n_iter in scikit-learn 0.23+
+    try:
+        projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), max_iter=300)
+    except TypeError:
+        # Fall back to n_iter for older scikit-learn versions
+        projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), n_iter=300)
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['tsne'])
 
 def is_empty(x):
