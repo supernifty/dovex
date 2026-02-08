@@ -7,7 +7,6 @@ import collections
 import csv
 import json
 import math
-import sys
 import util
 
 import numpy as np
@@ -39,6 +38,7 @@ CLASS_WEIGHT_MAP = {
   'unadjusted': None,
   'balanced': 'balanced'
 }
+
 
 def preprocess(data_fh, config):
     '''
@@ -100,7 +100,7 @@ def preprocess(data_fh, config):
                         seen_count[idx] += 1
                     x.extend(chunk)
                 elif is_empty(cell): # handle missing float
-                    #return {'error': 'Cannot train with missing data in numeric column {} on line {}.'.format(idx + 1, lines + 1)}
+                    # return {'error': 'Cannot train with missing data in numeric column {} on line {}.'.format(idx + 1, lines + 1)}
                     x.append(np.nan)
                     impute_numeric += 1
                 else:
@@ -147,6 +147,7 @@ def preprocess(data_fh, config):
 
     return {'X': X, 'y_labels': y_labels, 'y': y, 'y_predict': y_predict, 'y_exclude': y_exclude, 'categorical_cols': categorical_cols, 'distinct': distinct, 'notes': notes}
 
+
 def evaluate(data_fh, config, learner, learner_features=None):
     '''
         run prediction on over provided data and learner
@@ -181,6 +182,7 @@ def evaluate(data_fh, config, learner, learner_features=None):
 
     return result
 
+
 def project(data_fh, config, projector, has_features=True, max_rows=None):
     '''
         reduce dimensionality
@@ -207,12 +209,14 @@ def project(data_fh, config, projector, has_features=True, max_rows=None):
         }
     return result
 
+
 def projection_features(projector, component=0):
     '''
         returns weighting of projection input features on component 0
     '''
-    #return [x*x for x in projector.components_[component]]
+    # return [x*x for x in projector.components_[component]]
     return [abs(x) for x in projector.components_[component]]
+
 
 def map_to_original_features(importances, y_exclude, y_predict, distinct, categorical_cols):
     '''
@@ -237,12 +241,16 @@ def map_to_original_features(importances, y_exclude, y_predict, distinct, catego
                 current_col += 1
     return result
 
+
 # helpers
+
+
 def logistic_regression_features(learner):
     '''
         importance of features for logistic regression
     '''
     return [x*x for x in learner.coef_[0]]
+
 
 def svc_features(learner):
     '''
@@ -252,11 +260,13 @@ def svc_features(learner):
     result = np.sum(raw**2, axis=0)
     return result
 
+
 def random_forest_features(learner):
     '''
         importance of features for rf
     '''
     return learner.feature_importances_
+
 
 def linear_regression_features(learner):
     '''
@@ -264,21 +274,25 @@ def linear_regression_features(learner):
     '''
     return [x*x for x in learner.coef_]
 
+
 def svr_features(learner):
     '''
         importance of features for svm
     '''
     return [x*x for x in learner.coef_]
 
+
 # prediction algorithms
+
 
 def logistic_regression(data_fh, config):
     '''
         perform evaluation using logistic regression
     '''
-    #learner = sklearn.linear_model.LogisticRegression(C=1e5)
+    # learner = sklearn.linear_model.LogisticRegression(C=1e5)
     learner = sklearn.linear_model.LogisticRegression(solver='lbfgs', multi_class='multinomial', class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, logistic_regression_features)
+
 
 def svc(data_fh, config):
     '''
@@ -287,12 +301,14 @@ def svc(data_fh, config):
     learner = sklearn.svm.LinearSVC(class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, svc_features)
 
+
 def random_forest(data_fh, config):
     '''
         perform evaluation using rf
     '''
     learner = sklearn.ensemble.RandomForestClassifier(class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, random_forest_features)
+
 
 def linear_regression(data_fh, config):
     '''
@@ -301,6 +317,7 @@ def linear_regression(data_fh, config):
     learner = sklearn.linear_model.LinearRegression()
     return evaluate(data_fh, config, learner, linear_regression_features)
 
+
 def svr(data_fh, config):
     '''
         perform evaluation using svm
@@ -308,7 +325,9 @@ def svr(data_fh, config):
     learner = sklearn.svm.LinearSVR()
     return evaluate(data_fh, config, learner, svr_features)
 
+
 # dimensionality reduction implementations
+
 
 def pca(data_fh, config):
     '''
@@ -317,12 +336,14 @@ def pca(data_fh, config):
     projector = sklearn.decomposition.PCA(n_components=2)
     return project(data_fh, config, projector, has_features=True)
 
+
 def mds(data_fh, config):
     '''
         cluster data using mds
     '''
     projector = sklearn.manifold.MDS(n_components=2, max_iter=100, verbose=1)
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['mds'])
+
 
 def tsne(data_fh, config):
     '''
@@ -336,8 +357,10 @@ def tsne(data_fh, config):
         projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), n_iter=300)
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['tsne'])
 
+
 def is_empty(x):
   return x in ('', 'NA', 'n/a', 'N/A')
+
 
 def prep_correlation(data_fh, config):
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
@@ -360,8 +383,8 @@ def prep_correlation(data_fh, config):
         if row[0].startswith('#'): # comment
             continue
         for idx, cell in enumerate(row): # each col
-            #if exclude_missing and cell == '':
-            #  continue
+            # if exclude_missing and cell == '':
+            #   continue
             if y_exclude is not None and idx not in y_exclude: # row index to exclude
                 colname = meta['header'][idx]
                 data[colname].append(cell)
@@ -372,6 +395,7 @@ def prep_correlation(data_fh, config):
                     counts[colname][cell] = 0
                   counts[colname][cell] += 1
     return data, counts, meta, categorical_cols
+
 
 def correlation(data_fh, config, with_detail=False):
     '''
@@ -411,7 +435,6 @@ def correlation(data_fh, config, with_detail=False):
                       observed[key] += 1
                       expected_x[data[x][idx]] += 1
                       expected_y[data[y][idx]] += 1
-
                     # unobserved combinations
                     ks = list(observed.keys())
                     for k in ks:
@@ -481,6 +504,7 @@ def correlation(data_fh, config, with_detail=False):
     # cs: [[n11 n12 n13], [n21 n22 n23]...]]
     # ts: [[t11 t12 t13], [t21 t22 t23]...]]
     return {'xs': xs, 'zs': zs, 'cs': cs, 'ts': ts, 'ds': ds}
+
 
 def correlation_subgroup(data_fh, config):
   '''
@@ -560,10 +584,10 @@ def correlation_subgroup(data_fh, config):
                 pvalue = 1
               result.append((s1, s2, pvalue, len(groups[s1]) + len(groups[s2]), np.mean(groups[s1]), np.mean(groups[s2]), np.std(groups[s1], ddof=1), np.std(groups[s2], ddof=1), 't-test'))
 
- 
         else: # not applicable chi-square
-          pass 
+          pass
   return {'result': result}
+
 
 METHODS = {
     'logistic': logistic_regression,

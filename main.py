@@ -3,16 +3,13 @@
     main web interface
 '''
 
-import csv
 import datetime
-import io
 import os
 import re
 import requests
 import secrets
 import urllib
 import uuid
-import argparse
 import pandas as pd
 import numpy as np
 from pandas.core.dtypes.common import infer_dtype_from_object
@@ -25,13 +22,13 @@ import ml
 import proxy
 import util
 
-#import plotly.graph_objs as go
-#import pandas as pd
+# import plotly.graph_objs as go
+# import pandas as pd
 
-NOAUTH='main'
-DEFAULT_USER='dovex@supernifty.org'
+NOAUTH = 'main'
+DEFAULT_USER = 'dovex@supernifty.org'
 
-MISSINGNESS=False
+MISSINGNESS = False
 
 app = flask.Flask(__name__, template_folder='templates')
 app.config.from_pyfile('config.py')
@@ -41,7 +38,10 @@ app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 login = flask_login.LoginManager(app)
 login.login_view = NOAUTH
 
+
 # ----- auth database -----
+
+
 class User (flask_login.UserMixin):
   _email = None
 
@@ -60,10 +60,11 @@ class User (flask_login.UserMixin):
   def get_id(self):
     return self._email
 
+
 def create_database():
   # save the metadata - create if not exist
   db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
-  con = sqlite3.connect(db)    
+  con = sqlite3.connect(db)
   cursor = con.cursor()
   cursor.execute('''
       CREATE TABLE IF NOT EXISTS users (email text primary key not null)''')
@@ -77,10 +78,12 @@ def create_database():
   con.commit()
   return con
 
-#def users():
-#  db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
-#  con = sqlite3.connect(db)
-#  return con
+
+# def users():
+#   db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
+#   con = sqlite3.connect(db)
+#   return con
+
 
 def find_or_create_user(email):
   con = create_database()
@@ -95,6 +98,7 @@ def find_or_create_user(email):
   else:
     return User(existing[0])
 
+
 @login.user_loader
 def load_user(user_id):
     cursor = create_database().cursor()
@@ -104,6 +108,7 @@ def load_user(user_id):
       return None
     else:
       return User(existing[0])
+
 
 @app.route('/', methods=['GET', 'POST'])
 def main():
@@ -131,6 +136,7 @@ def main():
             return flask.redirect(flask.url_for('explore', filename=filename))
     return flask.render_template('main.html')
 
+
 @app.route('/uploads', methods=['GET'])
 @flask_login.login_required
 def uploads():
@@ -145,7 +151,7 @@ def uploads():
 @app.route('/delete/<filename>', methods=['GET'])
 @flask_login.login_required
 def delete(filename):
-  target_fn = os.path.join(app.config['UPLOAD_FOLDER'], filename) 
+  target_fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
   if os.path.exists(target_fn):
     os.remove(target_fn)
     db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
@@ -155,9 +161,10 @@ def delete(filename):
     con.commit()
   return flask.redirect(flask.url_for('uploads'))
 
+
 def write(data, filename, title=''):
     # save the data
-    target_fn = os.path.join(app.config['UPLOAD_FOLDER'], filename) 
+    target_fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     data.save(target_fn)
     size = os.stat(target_fn).st_size
 
@@ -167,6 +174,7 @@ def write(data, filename, title=''):
     cursor.execute('insert into dataset values (?, ?, ?, ?, ?)', (filename, flask_login.current_user._email, title, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), size))
     con.commit()
 
+
 def read(filename):
     '''
         opens specified filehandle
@@ -175,12 +183,13 @@ def read(filename):
     if filename == 'meta.sqlite':
       raise FileNotFoundError
 
-    #if filename.startswith('url='):
-    #  return urllib.urlopen(filename[4:])
-    #else:
+    # if filename.startswith('url='):
+    #   return urllib.urlopen(filename[4:])
+    # else:
     if re.match(r'^[\w.-]+$', filename) is None:
       raise FileNotFoundError
     return open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
 
 def matches_dtypes(df, dtypes):
     """
@@ -202,9 +211,10 @@ def matches_dtypes(df, dtypes):
       or a 'datetime64[ns, tz]' string
     """
     dtypes = list(map(infer_dtype_from_object, dtypes))
-    boolean_list = [any([issubclass(coltype.type,t) for t in dtypes])
-                     for (column,coltype) in df.dtypes.items()]
+    boolean_list = [any([issubclass(coltype.type, t) for t in dtypes])
+                     for (column, coltype) in df.dtypes.items()]
     return pd.Series(boolean_list, index=df.columns)
+
 
 # Guess unknown datatypes
 # For now, if it's not numeric, it's categorical
@@ -215,14 +225,14 @@ def guess_datatypes(df, known_datatypes=None):
     Return Series of resulting datatypes.
     Will be identical to known_datatypes if all datatypes were specified.
     """
-    ALLOWED_VALUES = {'categorical','numeric',''}
+    ALLOWED_VALUES = {'categorical', 'numeric', ''}
     if known_datatypes is None:
         known_datatypes = ['']*df.shape[1]
     if len(set(known_datatypes) - ALLOWED_VALUES) > 0:
         raise ValueError("Unrecognised datatypes: {}".format(set(known_datatypes) - ALLOWED_VALUES))
 
     datatypes = pd.Series(known_datatypes, index=df.columns)
-    unknown = [t=='' for t in known_datatypes]
+    unknown = [t == '' for t in known_datatypes]
     looks_numeric = matches_dtypes(df, [np.number])
     # for now either numeric or categorical
     looks_categorical = ~looks_numeric
@@ -238,7 +248,7 @@ def config(filename):
     '''
     # TODO
     flask.abort(404)
-    
+
 
 @app.route('/data/<filename>')
 def json_data(filename):
@@ -259,10 +269,10 @@ def json_data(filename):
         with read(filename) as data_fh:
             df = pd.read_csv(data_fh, header=0, sep=util.choose_delimiter(data_fh))
 
-        if str(df.iloc[0,0])[0]=='#':
-            datatype_row = df.iloc[0,:]
+        if str(df.iloc[0, 0])[0] == '#':
+            datatype_row = df.iloc[0, :]
             datatype_row[0] = datatype_row[0][1:]
-            df = df.iloc[1:,:]
+            df = df.iloc[1:, :]
         else:
             datatype_row = None
 
@@ -280,7 +290,7 @@ def json_data(filename):
             for field in meta['header']:
                 if df[field].isnull().sum() > 0:
                     newfield = "missing_"+field
-                    print("{} has missing values, creating {}".format(field,newfield))
+                    print("{} has missing values, creating {}".format(field, newfield))
                     df[newfield] = df[field].isnull()
                     new_fields.append(newfield)
             meta['header'] += new_fields
@@ -294,6 +304,7 @@ def json_data(filename):
     except FileNotFoundError:
         flask.abort(404)
 
+
 @app.route('/explore/<filename>')
 def explore(filename):
     '''
@@ -303,6 +314,7 @@ def explore(filename):
         return flask.render_template('explore.html', filename=filename)
     except FileNotFoundError:
         flask.abort(404)
+
 
 @app.route('/process/<filename>', methods=['POST'])
 def process(filename):
@@ -319,6 +331,7 @@ def process(filename):
     except FileNotFoundError:
         flask.abort(404, 'data not found')
 
+
 @app.route('/help')
 def show_help():
     '''
@@ -326,13 +339,15 @@ def show_help():
     '''
     return flask.render_template('help.html')
 
-##### auth #####
+
+# auth
 @app.route('/logout')
 @flask_login.login_required
 def logout():
   flask_login.logout_user()
   flask.flash('You have been logged out.')
   return flask.redirect(flask.url_for(NOAUTH))
+
 
 @app.route('/authorize/<provider>')
 def oauth2_authorize(provider):
@@ -363,6 +378,7 @@ def oauth2_authorize(provider):
 
     # redirect the user to the OAuth2 provider authorization URL
     return flask.redirect(provider_data['authorize_url'] + '?' + qs)
+
 
 @app.route('/callback/<provider>')
 def oauth2_callback(provider):
@@ -419,6 +435,7 @@ def oauth2_callback(provider):
     flask_login.login_user(user)
     return flask.redirect(flask.url_for('main')) # TODO redirect to target?
 
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
-    #app.run()
+    # app.run()
