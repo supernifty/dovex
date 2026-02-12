@@ -1,7 +1,11 @@
 #!/usr/bin/env python
-'''
-  statistical learning and analysis methods
-'''
+"""
+Machine learning and statistical analysis methods.
+
+Provides classification (logistic regression, SVM, random forest),
+regression (linear, SVR), dimensionality reduction (PCA, MDS, t-SNE),
+and correlation analysis (Pearson, Chi-square, ANOVA).
+"""
 
 import collections
 import csv
@@ -41,10 +45,11 @@ CLASS_WEIGHT_MAP = {
 
 
 def preprocess(data_fh, config):
-    '''
-        puts the input data into X and y in an appropriate format for analysis
-        one hot encoding, normalization
-    '''
+    """
+    Transform CSV data into matrices for ML. Handles one-hot encoding for
+    categoricals, mean imputation for missing numerics, optional scaling.
+    Returns dict with X, y, metadata, and notes.
+    """
     # x_exclude, y_predict, y_exclude, scale?
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
     x_exclude = int(config['x_exclude']) # max missing cols
@@ -149,9 +154,11 @@ def preprocess(data_fh, config):
 
 
 def evaluate(data_fh, config, learner, learner_features=None):
-    '''
-        run prediction on over provided data and learner
-    '''
+    """
+    Train learner on data and evaluate with cross-validation.
+    Returns predictions, scores, confusion matrix (classification),
+    and feature importances if available.
+    """
     pre = preprocess(data_fh, config)
     if 'error' in pre:
         return pre
@@ -184,9 +191,10 @@ def evaluate(data_fh, config, learner, learner_features=None):
 
 
 def project(data_fh, config, projector, has_features=True, max_rows=None):
-    '''
-        reduce dimensionality
-    '''
+    """
+    Apply dimensionality reduction to data. Returns 2D projection coordinates
+    and feature weights (if projector supports components).
+    """
     pre = preprocess(data_fh, config)
     if 'error' in pre:
         return pre
@@ -211,17 +219,18 @@ def project(data_fh, config, projector, has_features=True, max_rows=None):
 
 
 def projection_features(projector, component=0):
-    '''
-        returns weighting of projection input features on component 0
-    '''
+    """
+    Extract absolute weights of input features for specified component.
+    """
     # return [x*x for x in projector.components_[component]]
     return [abs(x) for x in projector.components_[component]]
 
 
 def map_to_original_features(importances, y_exclude, y_predict, distinct, categorical_cols):
-    '''
-        convert one hot encoded back to correct index
-    '''
+    """
+    Map one-hot encoded feature importances back to original column indices.
+    Sums importances across one-hot columns for categoricals.
+    """
     result = []
     current_col = 0
     importance = 0
@@ -242,113 +251,104 @@ def map_to_original_features(importances, y_exclude, y_predict, distinct, catego
     return result
 
 
-# helpers
-
-
 def logistic_regression_features(learner):
-    '''
-        importance of features for logistic regression
-    '''
+    """
+    Extract squared coefficients as feature importances for logistic regression.
+    """
     return [x*x for x in learner.coef_[0]]
 
 
 def svc_features(learner):
-    '''
-        importance of features for svm
-    '''
+    """
+    Extract squared coefficients as feature importances for linear SVM.
+    """
     raw = learner.coef_
     result = np.sum(raw**2, axis=0)
     return result
 
 
 def random_forest_features(learner):
-    '''
-        importance of features for rf
-    '''
+    """
+    Extract Gini-based feature importances from random forest.
+    """
     return learner.feature_importances_
 
 
 def linear_regression_features(learner):
-    '''
-        importance of features for linear regression
-    '''
+    """
+    Extract squared coefficients as feature importances for linear regression.
+    """
     return [x*x for x in learner.coef_]
 
 
 def svr_features(learner):
-    '''
-        importance of features for svm
-    '''
+    """
+    Extract squared coefficients as feature importances for SVR.
+    """
     return [x*x for x in learner.coef_]
 
 
-# prediction algorithms
-
-
 def logistic_regression(data_fh, config):
-    '''
-        perform evaluation using logistic regression
-    '''
+    """
+    Train and evaluate multinomial logistic regression classifier.
+    """
     # learner = sklearn.linear_model.LogisticRegression(C=1e5)
     learner = sklearn.linear_model.LogisticRegression(solver='lbfgs', multi_class='multinomial', class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, logistic_regression_features)
 
 
 def svc(data_fh, config):
-    '''
-        perform evaluation using svm
-    '''
+    """
+    Train and evaluate linear SVM classifier.
+    """
     learner = sklearn.svm.LinearSVC(class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, svc_features)
 
 
 def random_forest(data_fh, config):
-    '''
-        perform evaluation using rf
-    '''
+    """
+    Train and evaluate random forest classifier.
+    """
     learner = sklearn.ensemble.RandomForestClassifier(class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
     return evaluate(data_fh, config, learner, random_forest_features)
 
 
 def linear_regression(data_fh, config):
-    '''
-        perform evaluation using linear regression
-    '''
+    """
+    Train and evaluate linear regression model.
+    """
     learner = sklearn.linear_model.LinearRegression()
     return evaluate(data_fh, config, learner, linear_regression_features)
 
 
 def svr(data_fh, config):
-    '''
-        perform evaluation using svm
-    '''
+    """
+    Train and evaluate support vector regression model.
+    """
     learner = sklearn.svm.LinearSVR()
     return evaluate(data_fh, config, learner, svr_features)
 
 
-# dimensionality reduction implementations
-
-
 def pca(data_fh, config):
-    '''
-        cluster data using pca
-    '''
+    """
+    Apply PCA to reduce data to 2 dimensions.
+    """
     projector = sklearn.decomposition.PCA(n_components=2)
     return project(data_fh, config, projector, has_features=True)
 
 
 def mds(data_fh, config):
-    '''
-        cluster data using mds
-    '''
+    """
+    Apply MDS to reduce data to 2 dimensions. Limited to 1000 rows.
+    """
     projector = sklearn.manifold.MDS(n_components=2, max_iter=100, verbose=1)
     return project(data_fh, config, projector, has_features=False, max_rows=MAX_ROWS['mds'])
 
 
 def tsne(data_fh, config):
-    '''
-        cluster data using tsne
-    '''
+    """
+    Apply t-SNE to reduce data to 2 dimensions. Limited to 10000 rows.
+    """
     # max_iter replaces n_iter in scikit-learn 0.23+
     try:
         projector = sklearn.manifold.TSNE(n_components=2, verbose=1, perplexity=int(config['perplexity']), max_iter=300)
@@ -359,10 +359,17 @@ def tsne(data_fh, config):
 
 
 def is_empty(x):
+  """
+  Check if value represents missing data ('', 'NA', 'n/a', 'N/A').
+  """
   return x in ('', 'NA', 'n/a', 'N/A')
 
 
 def prep_correlation(data_fh, config):
+    """
+    Load data for correlation analysis. Returns data dict, value counts,
+    metadata, and categorical column indices.
+    """
     y_exclude = set([int(x) for x in json.loads(config['y_exclude'])])
     categorical_cols = set([i for i, x in enumerate(json.loads(config['datatype'])) if x == 'categorical'])
     delimiter = util.choose_delimiter(data_fh)
@@ -398,9 +405,11 @@ def prep_correlation(data_fh, config):
 
 
 def correlation(data_fh, config, with_detail=False):
-    '''
-        calculate correlation as a p-value of each feature
-    '''
+    """
+    Calculate pairwise correlations between all features.
+    Uses Pearson (numeric-numeric), Chi-square (categorical-categorical),
+    or ANOVA (mixed). Returns p-values matrix.
+    """
     data, counts, meta, categorical_cols = prep_correlation(data_fh, config)
 
     # calculate p-values
@@ -507,9 +516,10 @@ def correlation(data_fh, config, with_detail=False):
 
 
 def correlation_subgroup(data_fh, config):
-  '''
-    for anova or chi-square do individual breakdowns
-  '''
+  """
+  Perform pairwise comparisons between subgroups of two features.
+  Uses t-tests (categorical-numeric) or chi-square (categorical-categorical).
+  """
   data, counts, meta, categorical_cols = prep_correlation(data_fh, config)
   # calculate p-values
   result = []

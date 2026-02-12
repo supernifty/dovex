@@ -1,3 +1,6 @@
+"""
+Tests for main.py Flask application routes and data handling.
+"""
 
 import flask
 

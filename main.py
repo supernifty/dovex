@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-'''
-    main web interface
-'''
+"""
+Main Flask application for Dovex.
+
+Provides web interface for data upload, exploration, and analysis.
+Handles OAuth2 authentication, file storage, and routes for visualization and ML processing.
+"""
 
 import datetime
 import os
@@ -43,26 +46,37 @@ login.login_view = NOAUTH
 
 
 class User (flask_login.UserMixin):
+  """
+  User model for flask-login authentication.
+  """
   _email = None
 
   def __init__(self, email):
+    """Initialize user with email address."""
     self._email = email
 
   def is_authenticated(self):
+    """Return True if user is authenticated."""
     return True
 
   def is_active(self):
+    """Return True if user account is active."""
     return True
 
   def is_anonymous(self):
+    """Return False since this is an authenticated user."""
     return False
 
   def get_id(self):
+    """Return unique identifier (email) for user."""
     return self._email
 
 
 def create_database():
-  # save the metadata - create if not exist
+  """
+  Create SQLite database with users and dataset tables if not exists.
+  Returns database connection.
+  """
   db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
   con = sqlite3.connect(db)
   cursor = con.cursor()
@@ -86,6 +100,9 @@ def create_database():
 
 
 def find_or_create_user(email):
+  """
+  Find existing user by email or create new user. Returns User instance.
+  """
   con = create_database()
   cursor = con.cursor()
   cursor.execute("select email from users where email = ?", (email,))
@@ -101,6 +118,9 @@ def find_or_create_user(email):
 
 @login.user_loader
 def load_user(user_id):
+    """
+    Flask-login callback to reload user from session. Returns User or None.
+    """
     cursor = create_database().cursor()
     cursor.execute("select email from users where email = ?", (user_id,))
     existing = cursor.fetchone()
@@ -112,9 +132,9 @@ def load_user(user_id):
 
 @app.route('/', methods=['GET', 'POST'])
 def main():
-    '''
-        saves the uploaded file and forwards to the processor
-    '''
+    """
+    Main upload page. POST saves file and redirects to explore page.
+    """
     if flask.request.method == 'POST':
         if not flask_login.current_user.is_authenticated:
             flask.abort(403)
@@ -140,6 +160,9 @@ def main():
 @app.route('/uploads', methods=['GET'])
 @flask_login.login_required
 def uploads():
+  """
+  Display list of current user's uploaded datasets.
+  """
   db = os.path.join(app.config['UPLOAD_FOLDER'], app.config['META'])
   con = sqlite3.connect(db)
   cursor = con.cursor()
@@ -151,6 +174,9 @@ def uploads():
 @app.route('/delete/<filename>', methods=['GET'])
 @flask_login.login_required
 def delete(filename):
+  """
+  Delete user's uploaded dataset file and metadata.
+  """
   target_fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
   if os.path.exists(target_fn):
     os.remove(target_fn)
@@ -163,7 +189,9 @@ def delete(filename):
 
 
 def write(data, filename, title=''):
-    # save the data
+    """
+    Save uploaded file to disk and record metadata in database.
+    """
     target_fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     data.save(target_fn)
     size = os.stat(target_fn).st_size
@@ -176,10 +204,9 @@ def write(data, filename, title=''):
 
 
 def read(filename):
-    '''
-        opens specified filehandle
-        currently only supports files
-    '''
+    """
+    Open file from upload folder. Validates filename for security.
+    """
     if filename == 'meta.sqlite':
       raise FileNotFoundError
 
@@ -193,22 +220,8 @@ def read(filename):
 
 def matches_dtypes(df, dtypes):
     """
-    Return Series that is True where dtype of column matches given dtypes.
-    Returns a Series with index matching df.columns.
-    dtypes must be an iterable of type specifications.
-    Copies match logic from pandas.DataFrame.select_dtypes();
-    use same type specifications:
-    * To select all *numeric* types use the numpy dtype ``numpy.number``
-    * To select strings you must use the ``object`` dtype, but note that
-      this will return *all* object dtype columns
-    * See the `numpy dtype hierarchy
-      <http://docs.scipy.org/doc/numpy/reference/arrays.scalars.html>`__
-    * To select datetimes, use np.datetime64, 'datetime' or 'datetime64'
-    * To select timedeltas, use np.timedelta64, 'timedelta' or
-      'timedelta64'
-    * To select Pandas categorical dtypes, use 'category'
-    * To select Pandas datetimetz dtypes, use 'datetimetz' (new in 0.20.0),
-      or a 'datetime64[ns, tz]' string
+    Return boolean Series indicating which columns match given dtype specifications.
+    Uses pandas select_dtypes logic.
     """
     dtypes = list(map(infer_dtype_from_object, dtypes))
     boolean_list = [any([issubclass(coltype.type, t) for t in dtypes])
@@ -216,14 +229,10 @@ def matches_dtypes(df, dtypes):
     return pd.Series(boolean_list, index=df.columns)
 
 
-# Guess unknown datatypes
-# For now, if it's not numeric, it's categorical
-# For now, just use pandas' guess at dtype
 def guess_datatypes(df, known_datatypes=None):
     """
-    Where known_datatypes is '', fill in with guessed datatypes.
-    Return Series of resulting datatypes.
-    Will be identical to known_datatypes if all datatypes were specified.
+    Infer datatypes for columns where not specified. Fills empty strings
+    with 'numeric' or 'categorical' based on pandas dtype.
     """
     ALLOWED_VALUES = {'categorical', 'numeric', ''}
     if known_datatypes is None:
@@ -243,22 +252,18 @@ def guess_datatypes(df, known_datatypes=None):
 
 @app.route('/config/<filename>')
 def config(filename):
-    '''
-        store configuration options for this dataset
-    '''
-    # TODO
+    """
+    Store configuration options for dataset (not yet implemented).
+    """
     flask.abort(404)
 
 
 @app.route('/data/<filename>')
 def json_data(filename):
-    '''
-        Read in the data file from disk, parse, provide data as json.
-        Calculate datatypes where not provided.
-        Currently allowed datatypes are: numeric, categorical.
-        Optionally, based on args.missingness,
-        add variables to represent missingness of original variables.
-    '''
+    """
+    Read dataset from disk and return as JSON with inferred/specified datatypes.
+    Supports datatype specification via second row starting with '#'.
+    """
     try:
         meta = {}
 
@@ -307,9 +312,9 @@ def json_data(filename):
 
 @app.route('/explore/<filename>')
 def explore(filename):
-    '''
-        client side explorer
-    '''
+    """
+    Render interactive visualization page for dataset.
+    """
     try:
         return flask.render_template('explore.html', filename=filename)
     except FileNotFoundError:
@@ -318,9 +323,9 @@ def explore(filename):
 
 @app.route('/process/<filename>', methods=['POST'])
 def process(filename):
-    '''
-        server side analysis
-    '''
+    """
+    Execute server-side ML/statistical analysis method on dataset.
+    """
     try:
         method = flask.request.form['method']
         if method in ml.METHODS:
@@ -334,16 +339,18 @@ def process(filename):
 
 @app.route('/help')
 def show_help():
-    '''
-        render help page
-    '''
+    """
+    Render help documentation page.
+    """
     return flask.render_template('help.html')
 
 
-# auth
 @app.route('/logout')
 @flask_login.login_required
 def logout():
+  """
+  Log out current user and redirect to main page.
+  """
   flask_login.logout_user()
   flask.flash('You have been logged out.')
   return flask.redirect(flask.url_for(NOAUTH))
@@ -351,6 +358,10 @@ def logout():
 
 @app.route('/authorize/<provider>')
 def oauth2_authorize(provider):
+    """
+    Initiate OAuth2 authorization flow for given provider (Google/GitHub).
+    If AUTH='none', auto-login as default user.
+    """
     if 'AUTH' not in app.config or app.config['AUTH'] == 'none':
       user = find_or_create_user(DEFAULT_USER)
       # log the user in
@@ -382,6 +393,10 @@ def oauth2_authorize(provider):
 
 @app.route('/callback/<provider>')
 def oauth2_callback(provider):
+    """
+    Handle OAuth2 callback, exchange code for token, retrieve user email,
+    and log in user.
+    """
     if not flask_login.current_user.is_anonymous:
         return flask.redirect(flask.url_for(NOAUTH))
 
