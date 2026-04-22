@@ -1,0 +1,27 @@
+[project]
+name = "dovex"
+version = "0.1.0"
+description = "Data overview, visualization and exploration web app."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "boto3",
+    "flask",
+    "flask-httpauth",
+    "flask-login",
+    "numpy",
+    "pandas",
+    "requests",
+    "scikit-learn",
+    "scipy",
+]
+
+[dependency-groups]
+dev = [
+    "flake8",
+    "pytest",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+package = false
