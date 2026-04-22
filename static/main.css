@@ -2,6 +2,19 @@ body {
   padding-top: 60px;
 }
 
+.dovex-brand {
+  display: inline-flex !important;
+  align-items: center;
+}
+
+.navbar-brand-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  flex: 0 0 auto;
+}
+
 .heading {
   font-family: Arial, sans-serif;
   font-size: 20px;
