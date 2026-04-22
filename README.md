@@ -21,6 +21,8 @@ To run the software locally, first install the requirements above, then start th
 uv run python main.py
 ```
 
+Configuration defaults live in `config.py`. For machine-local overrides, create an untracked `config.local.py`; it is loaded automatically if present and should be used for developer-specific settings or secrets.
+
 Useful development commands:
 ```
 uv run pytest

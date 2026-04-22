@@ -2,3 +2,4 @@
 .aider*
 .venv/
 .uv-cache/
+config.local.py

@@ -33,8 +33,16 @@ DEFAULT_USER = 'dovex@supernifty.org'
 
 MISSINGNESS = False
 
+def load_app_config(app, default_config='config.py', local_config='config.local.py'):
+    """
+    Load committed defaults first, then apply optional local overrides.
+    """
+    app.config.from_pyfile(default_config)
+    app.config.from_pyfile(local_config, silent=True)
+
+
 app = flask.Flask(__name__, template_folder='templates')
-app.config.from_pyfile('config.py')
+load_app_config(app)
 app.secret_key = 'ducks in space'
 app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 

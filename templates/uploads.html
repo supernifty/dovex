@@ -58,10 +58,12 @@
         </thead>
         <tbody>
           {% for item in items %}
+          <tr>
             <td>{{ item.title }}</td>
             <td>{{ item.created }}</td>
             <td>{{ item.size }}</td>
             <td><a href="{{ url_for('explore', filename=item.filename) }}">View</a>&nbsp;-&nbsp;<a href="{{ url_for('delete', filename=item.filename) }}" onclick="return confirm('Seriously?')">Delete</a></td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
