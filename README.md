@@ -11,16 +11,21 @@ Try it out by visiting [dovex.supernifty.org](https://dovex.supernifty.org/).
 dovex has been tested on Python 3.
 
 ```
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+uv sync
 ```
 
 ## Usage
 
 To run the software locally, first install the requirements above, then start the web server:
 ```
-python main.py
+uv run python main.py
+```
+
+Useful development commands:
+```
+uv run pytest
+uv run flake8 . --exclude=.venv,.uv-cache,__pycache__ --count --select=E9,F63,F7,F82 --show-source --statistics
+uv run flake8 . --exclude=.venv,.uv-cache,__pycache__ --count --exit-zero --max-complexity=10 --max-line-length=127 --ignore=E111,E114 --statistics
 ```
 
 Next, visit http://127.0.0.1:5000/ and upload your data. The software expects the data to be in CSV or TSV format.

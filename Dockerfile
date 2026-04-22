@@ -1,9 +1,10 @@
 FROM python:3
 MAINTAINER Peter Georgeson "peter@supernifty.org"
 RUN apt-get update -y
+RUN pip install uv
 COPY . /app
 WORKDIR /app
-RUN pip install -r requirements.txt
-ENTRYPOINT ["python"]
+RUN uv sync --frozen
+ENTRYPOINT ["uv", "run"]
 EXPOSE 5000
 CMD ["main.py"]

@@ -293,7 +293,11 @@ def logistic_regression(data_fh, config):
     Train and evaluate multinomial logistic regression classifier.
     """
     # learner = sklearn.linear_model.LogisticRegression(C=1e5)
-    learner = sklearn.linear_model.LogisticRegression(solver='lbfgs', multi_class='multinomial', class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')])
+    learner = sklearn.linear_model.LogisticRegression(
+        solver='lbfgs',
+        class_weight=CLASS_WEIGHT_MAP[config.get('class_weight', 'unadjusted')],
+        max_iter=1000,
+    )
     return evaluate(data_fh, config, learner, logistic_regression_features)
 
 

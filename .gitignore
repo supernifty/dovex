@@ -1,1 +1,4 @@
 *.sw?
+.aider*
+.venv/
+.uv-cache/

@@ -27,7 +27,7 @@ class TestEvaluate:
 
     def test_evaluate_classification_returns_confusion_matrix(self, iris_file_handle, iris_config):
         """Test that classification problems return confusion matrix"""
-        learner = ml.sklearn.linear_model.LogisticRegression(solver='lbfgs', multi_class='multinomial')
+        learner = ml.sklearn.linear_model.LogisticRegression(solver='lbfgs', max_iter=1000)
         result = ml.evaluate(iris_file_handle, iris_config, learner)
 
         assert 'error' not in result
@@ -89,7 +89,7 @@ class TestLogisticRegression:
 
     def test_logistic_regression_features_shape(self):
         """Test that feature extractor returns correct shape"""
-        learner = ml.sklearn.linear_model.LogisticRegression(solver='lbfgs')
+        learner = ml.sklearn.linear_model.LogisticRegression(solver='lbfgs', max_iter=1000)
         # Train on simple data
         learner.fit([[1, 2], [3, 4], [5, 6]], ['A', 'B', 'A'])
         features = ml.logistic_regression_features(learner)

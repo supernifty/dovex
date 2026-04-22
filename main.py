@@ -241,7 +241,7 @@ def guess_datatypes(df, known_datatypes=None):
         raise ValueError("Unrecognised datatypes: {}".format(set(known_datatypes) - ALLOWED_VALUES))
 
     datatypes = pd.Series(known_datatypes, index=df.columns)
-    unknown = [t == '' for t in known_datatypes]
+    unknown = datatypes == ''
     looks_numeric = matches_dtypes(df, [np.number])
     # for now either numeric or categorical
     looks_categorical = ~looks_numeric
