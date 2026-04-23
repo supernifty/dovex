@@ -9,6 +9,7 @@ Handles OAuth2 authentication, file storage, and routes for visualization and ML
 import datetime
 import os
 import re
+import sqlite3
 import requests
 import secrets
 import urllib
@@ -16,7 +17,6 @@ import uuid
 import pandas as pd
 import numpy as np
 from pandas.core.dtypes.common import infer_dtype_from_object
-import sqlite3
 
 import flask
 import flask_login
@@ -226,6 +226,21 @@ def read(filename):
     return open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
 
+def get_dataset_title(filename):
+    """
+    Return the saved dataset title for a filename, or None if unavailable.
+    """
+    con = create_database()
+    cursor = con.cursor()
+    cursor.execute('select title from dataset where filename = ?', (filename,))
+    item = cursor.fetchone()
+    if item is None:
+        return None
+
+    title = item[0].strip()
+    return title or None
+
+
 def matches_dtypes(df, dtypes):
     """
     Return boolean Series indicating which columns match given dtype specifications.
@@ -324,7 +339,11 @@ def explore(filename):
     Render interactive visualization page for dataset.
     """
     try:
-        return flask.render_template('explore.html', filename=filename)
+        return flask.render_template(
+            'explore.html',
+            filename=filename,
+            dataset_title=get_dataset_title(filename),
+        )
     except FileNotFoundError:
         flask.abort(404)
 

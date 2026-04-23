@@ -3,6 +3,7 @@ Tests for main.py Flask application routes and data handling.
 """
 
 import flask
+from unittest import mock
 
 import main
 
@@ -30,6 +31,26 @@ def test_uploads_template_renders_one_row_per_dataset():
     assert rendered.count('<tr>') == 1 + len(items)
     assert '>First<' in rendered
     assert '>Second<' in rendered
+
+
+def test_explore_title_uses_dataset_name_when_available():
+    main.app.config['TESTING'] = True
+    client = main.app.test_client()
+
+    with mock.patch.object(main, 'get_dataset_title', return_value='Customer Churn'):
+        response = client.get('/explore/iris.data')
+
+    assert b'<title>dovex - Customer Churn</title>' in response.data
+
+
+def test_explore_title_falls_back_when_dataset_name_missing():
+    main.app.config['TESTING'] = True
+    client = main.app.test_client()
+
+    with mock.patch.object(main, 'get_dataset_title', return_value=None):
+        response = client.get('/explore/iris.data')
+
+    assert b'<title>dovex - Dataset Overview, Visualization and Exploration</title>' in response.data
 
 
 def test_load_app_config_applies_optional_local_override(tmp_path):
