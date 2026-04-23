@@ -27,6 +27,27 @@ var
     return numeric_value.toFixed(3);
   },
 
+  format_percent = function(value) {
+    return Number(value).toFixed(1) + '%';
+  },
+
+  format_category_summary = function(label, count, total) {
+    if (label === '' || total === 0) {
+      return '';
+    }
+    return label + ' (' + format_percent(100 * count / total) + ')';
+  },
+
+  sort_category_entries = function(entries) {
+    entries.sort(function(a, b) {
+      if (b[1] !== a[1]) {
+        return b[1] - a[1];
+      }
+      return String(a[0]).localeCompare(String(b[0]));
+    });
+    return entries;
+  },
+
   // NB we now assume datatype will be provided in meta, and don't calculate it
   calculate_summary = function() {
     var summary = {'columns': {}, 'missing_row': []},
@@ -79,17 +100,19 @@ var
   },
 
   show_columns = function() {
-    // prepare summary object
     var converted = [],
       column_summary,
       mean,
       sample_variance,
       sample_sd;
 
-    // convert to datatable
     for (column in g['data']['meta']['header']) { // 0..len
-      if (g['data']['meta']['datatype'][column] != 'categorical' && g['summary']['columns'][column]['count'] > 0) {
-        column_summary = g['summary']['columns'][column];
+      if (g['data']['meta']['datatype'][column] == 'categorical') {
+        continue;
+      }
+
+      column_summary = g['summary']['columns'][column];
+      if (column_summary['count'] > 0) {
         mean = column_summary['sum'] / column_summary['count'];
         if (column_summary['count'] > 1) {
           sample_variance = (column_summary['sum_sq'] - column_summary['count'] * Math.pow(mean, 2)) / (column_summary['count'] - 1);
@@ -102,7 +125,6 @@ var
           g['data']['meta']['header'][column],
           100 * column_summary['missing'] / g['data']['data'].length,
           Object.keys(column_summary['distinct']).length,
-          g['data']['meta']['datatype'][column],
           column_summary['min'],
           column_summary['max'],
           mean,
@@ -112,9 +134,8 @@ var
       else {
         converted.push([
           g['data']['meta']['header'][column],
-          100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length,
-          Object.keys(g['summary']['columns'][column]['distinct']).length,
-          g['data']['meta']['datatype'][column],
+          100 * column_summary['missing'] / g['data']['data'].length,
+          Object.keys(column_summary['distinct']).length,
           '',
           '',
           '',
@@ -131,12 +152,20 @@ var
       "searching": false,
       "bInfo" : false,
       "columnDefs": [ {
+        "targets": 0,
+          "render": function ( data, type, full, meta ) {
+            if (type === 'display' || type === 'filter') {
+              return escape_html(data);
+            }
+            return data;
+          }
+        }, {
         "targets": 1, //  missing%
           "render": function ( data, type, full, meta ) {
             return data.toFixed(1);
           }
         }, {
-        "targets": [4, 5, 6, 7], // numeric summary values
+        "targets": [3, 4, 5, 6], // numeric summary values
           "render": function ( data, type, full, meta ) {
             if (type === 'display' || type === 'filter') {
               return format_summary_number(data);
@@ -159,6 +188,94 @@ var
     });
     $('#table_columns').width($('.container').width());
     $('#table_columns tbody').on('click', 'tr', select_overview);
+
+    show_categorical_columns();
+  },
+
+  show_categorical_columns = function() {
+    var converted = [],
+      column_summary,
+      distinct_entries,
+      top_entries,
+      remaining_entries,
+      non_missing_total,
+      other_label,
+      distinct_without_missing;
+
+    for (column in g['data']['meta']['header']) {
+      if (g['data']['meta']['datatype'][column] != 'categorical') {
+        continue;
+      }
+
+      column_summary = g['summary']['columns'][column];
+      distinct_entries = [];
+      for (var distinct in column_summary['distinct']) {
+        if (distinct !== '') {
+          distinct_entries.push([distinct, column_summary['distinct'][distinct]]);
+        }
+      }
+
+      sort_category_entries(distinct_entries);
+      top_entries = distinct_entries.slice(0, 3);
+      remaining_entries = distinct_entries.slice(3);
+      non_missing_total = g['data']['data'].length - column_summary['missing'];
+      distinct_without_missing = distinct_entries.length;
+
+      if (remaining_entries.length > 0) {
+        other_label = remaining_entries.length + ' other categor' + (remaining_entries.length === 1 ? 'y' : 'ies') +
+          ' (' + format_percent(100 * remaining_entries.reduce(function(total, entry) { return total + entry[1]; }, 0) / non_missing_total) + ')';
+      }
+      else {
+        other_label = '';
+      }
+
+      converted.push([
+        g['data']['meta']['header'][column],
+        100 * column_summary['missing'] / g['data']['data'].length,
+        distinct_without_missing,
+        top_entries.length > 0 ? format_category_summary(top_entries[0][0], top_entries[0][1], non_missing_total) : '',
+        top_entries.length > 1 ? format_category_summary(top_entries[1][0], top_entries[1][1], non_missing_total) : '',
+        top_entries.length > 2 ? format_category_summary(top_entries[2][0], top_entries[2][1], non_missing_total) : '',
+        other_label
+      ]);
+    }
+
+    $('#table_categorical_columns tbody').off('click', 'tr');
+    $('#table_categorical_columns').DataTable({
+      "destroy": true,
+      "order": [[ 0, "asc" ]],
+      "paging": false,
+      "searching": false,
+      "bInfo" : false,
+      "columnDefs": [ {
+        "targets": [0, 3, 4, 5, 6],
+          "render": function ( data, type, full, meta ) {
+            if (type === 'display' || type === 'filter') {
+              return escape_html(data);
+            }
+            return data;
+          }
+        }, {
+        "targets": 1,
+          "render": function ( data, type, full, meta ) {
+            return data.toFixed(1);
+          }
+        }
+      ],
+      "select": {
+        style: 'os',
+        selector: 'td:first-child'
+      },
+      "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+        if (g["excluded_cols"].has(g['data']['meta']['header'].indexOf(aData[0]))) {
+          $(nRow).addClass("excluded");
+        }
+        return nRow;
+      },
+      "data": converted
+    });
+    $('#table_categorical_columns').width($('.container').width());
+    $('#table_categorical_columns tbody').on('click', 'tr', select_overview);
   },
 
   show_missing = function() {
@@ -911,14 +1028,18 @@ var
   },
 
   select_overview = function() {
+    var column_name = $(this).find('td:first').text(),
+      column = g['data']['meta']['header'].indexOf(column_name);
+
+    if (column === -1) {
+      return;
+    }
     if ( $(this).hasClass('excluded') ) {
       $(this).removeClass('excluded');
-      column = $('#table_columns').DataTable().row(this)[0][0];
       g['excluded_cols'].delete(column);
     }
     else {
       $(this).addClass('excluded');
-      column = $('#table_columns').DataTable().row(this)[0][0];
       g['excluded_cols'].add(column);
     }
     update_excluded();
