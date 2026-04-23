@@ -16,12 +16,14 @@ var
   },
 
   format_summary_number = function(value) {
-    var numeric_value = Number(value);
+    var numeric_value = Number(value),
+      abs_value;
 
     if (!$.isNumeric(value)) {
       return '';
     }
-    if (numeric_value !== 0 && Math.abs(numeric_value) < 0.001) {
+    abs_value = Math.abs(numeric_value);
+    if (numeric_value !== 0 && (abs_value < 0.001 || abs_value > 1000000)) {
       return numeric_value.toExponential(3);
     }
     return numeric_value.toFixed(3);
