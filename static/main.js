@@ -15,13 +15,25 @@ var
     $('#summary').html('Failed to load data.');
   },
 
+  format_summary_number = function(value) {
+    var numeric_value = Number(value);
+
+    if (!$.isNumeric(value)) {
+      return '';
+    }
+    if (numeric_value !== 0 && Math.abs(numeric_value) < 0.001) {
+      return numeric_value.toExponential(3);
+    }
+    return numeric_value.toFixed(3);
+  },
+
   // NB we now assume datatype will be provided in meta, and don't calculate it
   calculate_summary = function() {
     var summary = {'columns': {}, 'missing_row': []},
       missing_row;
 
     for (header in g['data']['meta']['header']) { // 0..len
-      summary['columns'][header] = {'missing': 0, 'distinct': {}, 'min': 1e9, 'max': -1e9, 'count': 0, 'sum': 0};
+      summary['columns'][header] = {'missing': 0, 'distinct': {}, 'min': 1e9, 'max': -1e9, 'count': 0, 'sum': 0, 'sum_sq': 0};
     }
 
     // populate summary - missing_row is a list of how many columns are missing for each row
@@ -46,6 +58,7 @@ var
             summary['columns'][col]['max'] = Math.max(summary['columns'][col]['max'], g['data']['data'][row][col]);
             summary['columns'][col]['count'] += 1;
             summary['columns'][col]['sum'] += Number(g['data']['data'][row][col]);
+            summary['columns'][col]['sum_sq'] += Math.pow(Number(g['data']['data'][row][col]), 2);
           }
         }
         if (!(g['data']['data'][row][col] in summary['columns'][col]['distinct'])) {
@@ -67,19 +80,33 @@ var
 
   show_columns = function() {
     // prepare summary object
-    var converted = [];
+    var converted = [],
+      column_summary,
+      mean,
+      sample_variance,
+      sample_sd;
 
     // convert to datatable
     for (column in g['data']['meta']['header']) { // 0..len
       if (g['data']['meta']['datatype'][column] != 'categorical' && g['summary']['columns'][column]['count'] > 0) {
+        column_summary = g['summary']['columns'][column];
+        mean = column_summary['sum'] / column_summary['count'];
+        if (column_summary['count'] > 1) {
+          sample_variance = (column_summary['sum_sq'] - column_summary['count'] * Math.pow(mean, 2)) / (column_summary['count'] - 1);
+          sample_sd = Math.sqrt(Math.max(sample_variance, 0));
+        }
+        else {
+          sample_sd = '';
+        }
         converted.push([
           g['data']['meta']['header'][column],
-          100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length,
-          Object.keys(g['summary']['columns'][column]['distinct']).length,
+          100 * column_summary['missing'] / g['data']['data'].length,
+          Object.keys(column_summary['distinct']).length,
           g['data']['meta']['datatype'][column],
-          g['summary']['columns'][column]['min'],
-          g['summary']['columns'][column]['max'],
-          (g['summary']['columns'][column]['sum'] / g['summary']['columns'][column]['count']).toFixed(1)
+          column_summary['min'],
+          column_summary['max'],
+          mean,
+          sample_sd
         ]);
       }
       else {
@@ -88,6 +115,7 @@ var
           100 * g['summary']['columns'][column]['missing'] / g['data']['data'].length,
           Object.keys(g['summary']['columns'][column]['distinct']).length,
           g['data']['meta']['datatype'][column],
+          '',
           '',
           '',
           ''
@@ -106,6 +134,14 @@ var
         "targets": 1, //  missing%
           "render": function ( data, type, full, meta ) {
             return data.toFixed(1);
+          }
+        }, {
+        "targets": [4, 5, 6, 7], // numeric summary values
+          "render": function ( data, type, full, meta ) {
+            if (type === 'display' || type === 'filter') {
+              return format_summary_number(data);
+            }
+            return data;
           }
         }
       ],
