@@ -32,3 +32,38 @@ body {
 
 details {
 }
+
+.login-panel {
+  margin-top: 48px;
+}
+
+.upload-panel {
+  margin-top: 20px;
+}
+
+.alt-panel {
+  margin-top: 20px;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #337ab7;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.sample-list li {
+  padding: 6px 0;
+}
+
+.btn-icon {
+  vertical-align: middle;
+  margin-right: 6px;
+}

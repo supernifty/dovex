@@ -46,49 +46,73 @@
     </nav>
 
 {% if current_user.is_authenticated %}
-    <div class="container">
-        <div class="row">
-          <h1>Data Overview, Visualization, and Exploration (dovex)</h1>
-          <div class="alert alert-info">Upload your dataset in CSV or TSV format as {{ current_user._email }}.</div>
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+      <div class="panel panel-default upload-panel">
+        <div class="panel-heading">
+          <h3 class="panel-title">Upload a Dataset</h3>
+        </div>
+        <div class="panel-body">
+          <p class="text-muted">Upload a CSV or TSV file to explore and visualize your data.</p>
           <form method=post enctype=multipart/form-data>
             <div class="form-group">
-              <label for="file">1. Choose a file to upload</label>
-              <input type="file" class="form-control-file" name="file" id="file" aria-describedby="fileHelp">
-              <small id="fileHelp" class="form-text text-muted">Upload a CSV or TSV file to explore your dataset.</small>
+              <label for="file">
+                <span class="step-number">1</span> Choose a file to upload
+              </label>
+              <input type="file" class="form-control" name="file" id="file">
+              <span class="help-block">Accepted formats: CSV, TSV</span>
             </div>
             <div class="form-group">
-              <label for="title">2. Name your dataset</label>
-              <input type="text" class="form-control-text" name="title" id="title" aria-describedby="title">
-              <small id="titleHelp" class="form-text text-muted">For future reference.</small>
+              <label for="title">
+                <span class="step-number">2</span> Name your dataset
+              </label>
+              <input type="text" class="form-control" name="title" id="title" placeholder="e.g. Sales Q1 2024">
+              <span class="help-block">Give your dataset a name for future reference.</span>
             </div>
-            <button type="submit" class="btn btn-primary">Upload and analyze</button>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload and analyze
+            </button>
+            <p class="text-muted small" style="margin-top: 12px; margin-bottom: 0;">Note: not designed for large datasets (&gt;1,000 features or &gt;100,000 rows).</p>
           </form>
         </div>
-        <div class="row">
-          &nbsp;
+      </div>
+
+      <div class="panel panel-default alt-panel">
+        <div class="panel-heading">
+          <h3 class="panel-title">Or explore sample data</h3>
         </div>
-        <div class="row">
-          <p>Alternatively, explore one of the example datasets:
-          <ul>
-            <li><a href="{{ url_for('explore', filename='iris.data') }}">Iris dataset</a> (<a target="_blank" href="http://archive.ics.uci.edu/ml/datasets/Iris">details</a>).</li>
-            <li><a href="{{ url_for('explore', filename='forestfires.csv') }}">Forest Fires dataset</a> (<a target="_blank" href="http://archive.ics.uci.edu/ml/datasets/Forest+Fires">details</a>).</li>
+        <div class="panel-body">
+          <ul class="list-unstyled sample-list">
+            <li><a href="{{ url_for('explore', filename='iris.data') }}">Iris dataset</a> <span class="text-muted">— flower measurements</span> <a target="_blank" href="http://archive.ics.uci.edu/ml/datasets/Iris" class="text-muted"><small>details</small></a></li>
+            <li><a href="{{ url_for('explore', filename='forestfires.csv') }}">Forest Fires dataset</a> <span class="text-muted">— environmental and fire data</span> <a target="_blank" href="http://archive.ics.uci.edu/ml/datasets/Forest+Fires" class="text-muted"><small>details</small></a></li>
           </ul>
-          </p>
         </div>
-        <div class="row">
-          <p>Note: This app isn't designed for large data sets. If you have more than 1,000 features or more than 100,000 rows, the app may be slow.
-        </div>
+      </div>
+
+      <p class="text-center text-muted">Alternatively, <a href="https://github.com/supernifty/dovex">run your own local, private copy</a> of this application.</p>
     </div>
+  </div>
+</div>
 
 {% else %}
-<div class="panel-heading">Please login to continue</div>
-  <div class="panel-body">
-    <a href="{{ url_for('oauth2_authorize', provider='google') }}" class="btn btn-primary btn-lg active" role="button" aria-pressed="true">Login</a>
+<div class="container">
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3">
+      <div class="panel panel-default text-center login-panel">
+        <div class="panel-body">
+          <h2>Please login to continue</h2>
+          <p class="text-muted">Sign in to upload and explore your datasets.</p>
+          <a href="{{ url_for('oauth2_authorize', provider='google') }}" class="btn btn-primary btn-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            Login
+          </a>
+        </div>
+      </div>
+      <p class="text-center text-muted">Alternatively, <a href="https://github.com/supernifty/dovex">run your own local, private copy</a> of this application.</p>
+    </div>
   </div>
-  <div>
-</div>
-<div class="panel-heading">Alternatively</div>
-  <div class="panel-body"><a href="https://github.com/supernifty/dovex">Run your own local, private copy of this application</a></div>
 </div>
 {% endif %}
 
