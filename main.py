@@ -43,7 +43,6 @@ def load_app_config(app, default_config='config.py', local_config='config.local.
 
 app = flask.Flask(__name__, template_folder='templates')
 load_app_config(app)
-app.secret_key = 'ducks in space'
 app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 
 login = flask_login.LoginManager(app)

@@ -56,13 +56,14 @@ def test_explore_title_falls_back_when_dataset_name_missing():
 def test_load_app_config_applies_optional_local_override(tmp_path):
     default_config = tmp_path / 'config.py'
     local_config = tmp_path / 'config.local.py'
-    default_config.write_text("DEBUG = False\nUPLOAD_FOLDER = './uploads'\n")
+    default_config.write_text("DEBUG = False\nSECRET_KEY = 'base-secret'\nUPLOAD_FOLDER = './uploads'\n")
     local_config.write_text("DEBUG = True\nAUTH = 'none'\n")
 
     app = flask.Flask(__name__, root_path=str(tmp_path))
     main.load_app_config(app, default_config='config.py', local_config='config.local.py')
 
     assert app.config['DEBUG'] is True
+    assert app.config['SECRET_KEY'] == 'base-secret'
     assert app.config['UPLOAD_FOLDER'] == './uploads'
     assert app.config['AUTH'] == 'none'
 
