@@ -3,9 +3,16 @@ Tests for main.py Flask application routes and data handling.
 """
 
 import flask
+import flask_login
 from unittest import mock
 
 import main
+
+
+def render_template_as_user(template_name, **context):
+    with main.app.test_request_context('/'):
+        flask_login.login_user(main.User('person@example.com'))
+        return flask.render_template(template_name, **context)
 
 
 def test_json_data_iris():
@@ -24,13 +31,21 @@ def test_uploads_template_renders_one_row_per_dataset():
         {'filename': 'second.csv', 'title': 'Second', 'created': '2026-04-22 11:00:00', 'size': 456},
     ]
 
-    with main.app.test_request_context('/uploads'):
-        rendered = flask.render_template('uploads.html', items=items)
+    rendered = render_template_as_user('uploads.html', items=items)
 
     # One header row plus one row for each dataset
     assert rendered.count('<tr>') == 1 + len(items)
     assert '>First<' in rendered
     assert '>Second<' in rendered
+    assert 'Logout person@example.com' in rendered
+
+
+def test_help_template_shows_authenticated_user_in_nav():
+    rendered = render_template_as_user('help.html')
+
+    assert '>New Upload<' in rendered
+    assert '>Datasets<' in rendered
+    assert 'Logout person@example.com' in rendered
 
 
 def test_explore_title_uses_dataset_name_when_available():
