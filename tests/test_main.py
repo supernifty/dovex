@@ -46,6 +46,8 @@ def test_help_template_shows_authenticated_user_in_nav():
     assert '>New Upload<' in rendered
     assert '>Datasets<' in rendered
     assert 'Logout person@example.com' in rendered
+    assert 'A <a href="https://supernifty.org">supernifty</a> project' in rendered
+    assert 'dovex is <a href="https://github.com/supernifty/dovex">open-source</a>' in rendered
 
 
 def test_explore_title_uses_dataset_name_when_available():
@@ -56,6 +58,8 @@ def test_explore_title_uses_dataset_name_when_available():
         response = client.get('/explore/iris.data')
 
     assert b'<title>dovex - Customer Churn</title>' in response.data
+    assert b'<p class="text-muted">Dataset</p>' in response.data
+    assert b'<h3>Customer Churn</h3>' in response.data
 
 
 def test_explore_title_falls_back_when_dataset_name_missing():
@@ -66,6 +70,7 @@ def test_explore_title_falls_back_when_dataset_name_missing():
         response = client.get('/explore/iris.data')
 
     assert b'<title>dovex - Dataset Overview, Visualization and Exploration</title>' in response.data
+    assert b'<p class="text-muted">Dataset</p>' not in response.data
 
 
 def test_load_app_config_applies_optional_local_override(tmp_path):

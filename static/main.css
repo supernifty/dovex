@@ -26,6 +26,21 @@ body {
   margin-top: 20px;
 }
 
+.dataset-title-header {
+  margin-top: 10px;
+  margin-bottom: 24px;
+}
+
+.dataset-title-header p {
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dataset-title-header h3 {
+  margin-top: 0;
+}
+
 .excluded {
   color: red;
 }
@@ -66,4 +81,40 @@ details {
 .btn-icon {
   vertical-align: middle;
   margin-right: 6px;
+}
+
+.site-footer {
+  margin: 36px 0 24px;
+  padding-top: 18px;
+  border-top: 1px solid #ddd;
+}
+
+.site-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.site-footer-content p {
+  margin: 0;
+}
+
+.site-footer-left {
+  text-align: left;
+}
+
+.site-footer-right {
+  text-align: right;
+}
+
+@media (max-width: 767px) {
+  .site-footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .site-footer-right {
+    text-align: left;
+  }
 }

@@ -51,6 +51,12 @@
     </nav>
 
     <div class="container">
+      {% if dataset_title %}
+      <div class="page-header dataset-title-header">
+        <p class="text-muted">Dataset</p>
+        <h3>{{ dataset_title }}</h3>
+      </div>
+      {% endif %}
       <ul class="nav nav-tabs">
         <li class="active"><a href="#tab_overview" data-toggle="tab">Overview</a></li>
         <li><a href="#tab_missing" data-toggle="tab">Missing Data</a></li>
@@ -404,6 +410,14 @@
 
 
     </div> <!-- container -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="site-footer-content text-muted">
+          <p class="site-footer-left">A <a href="https://supernifty.org">supernifty</a> project</p>
+          <p class="site-footer-right">dovex is <a href="https://github.com/supernifty/dovex">open-source</a></p>
+        </div>
+      </div>
+    </footer>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.js"></script>
