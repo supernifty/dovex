@@ -9,8 +9,8 @@
 
     <!-- Bootstrap -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.css">
-    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/select/1.2.3/css/select.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/select/1.5.3/css/select.dataTables.min.css">
 
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -81,6 +81,16 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.js"></script>
+    <script>
+    $(function() {
+      $('#dataset').DataTable({
+        responsive: true,
+        pageLength: 10,
+        order: [[1, 'desc']]
+      });
+    });
+    </script>
     <script src="{{ url_for('static', filename='main.js', v='171210') }}"></script>
-   </body>
+    </body>
 </html> 
