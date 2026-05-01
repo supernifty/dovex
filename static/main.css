@@ -118,3 +118,53 @@ details {
     text-align: left;
   }
 }
+
+.dataset-title-link {
+  cursor: pointer;
+  color: #337ab7;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.dataset-title-link:hover {
+  color: #23527c;
+  text-decoration: underline;
+}
+
+.dataset-title-link:hover i {
+  color: #23527c;
+}
+
+/* Dynamic table styles for uploads page */
+#dataset tbody tr td a.dataset-title-link {
+  font-weight: 500;
+}
+
+#dataset tbody tr td a.dataset-title-link:hover {
+  text-decoration: underline;
+}
+
+#dataset tbody tr td a.dataset-title-link i {
+  margin-right: 6px;
+  color: #337ab7;
+}
+
+/* Icon-only action links */
+#dataset tbody tr td i {
+  font-size: 16px;
+}
+
+#dataset tbody tr td a[title] {
+  color: #555;
+  text-decoration: none;
+  margin-right: 12px;
+  transition: color 0.2s ease;
+}
+
+#dataset tbody tr td a[title]:hover {
+  color: #337ab7;
+}
+
+#dataset tbody tr td a[title]:first-child {
+  margin-right: 12px;
+}

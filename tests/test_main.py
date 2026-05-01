@@ -35,9 +35,13 @@ def test_uploads_template_renders_one_row_per_dataset():
 
     # One header row plus one row for each dataset
     assert rendered.count('<tr>') == 1 + len(items)
-    assert '>First<' in rendered
-    assert '>Second<' in rendered
+    # Check that dataset titles appear in the rendered output
+    assert 'First' in rendered and 'explore' in rendered
+    assert 'Second' in rendered
     assert 'Logout person@example.com' in rendered
+    # Check for Font Awesome icons and updated UI
+    assert 'fas fa-database' in rendered
+    assert 'fas fa-trash' in rendered
 
 
 def test_help_template_shows_authenticated_user_in_nav():
